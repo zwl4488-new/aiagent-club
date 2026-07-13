@@ -79,27 +79,44 @@ const pypiCols = [
   <footer class="site">{s.footer}</footer>
 
   <script is:inline>
-    // 开了 ClientRouter 后,is:inline 脚本不在 SPA 跳转后重跑;把绑定挂到 astro:page-load,
-    // 它在首屏与每次视图切换后都会触发,保证切换语言后按钮仍可用。document 跨切换不被替换。
-    function setupTheme() {
+    // 主题与语言完全独立。ClientRouter 切页会把 <html> 换成新页面的(静态 HTML 里没有
+    // data-theme,那是运行时加的),所以每次切换后必须从 localStorage 重新应用已存主题,
+    // 否则会回退到系统偏好(表现为"切语言就跳暗")。astro:after-swap 在重绘前触发,防闪+防丢。
+    function applyTheme() {
       const root = document.documentElement
-      const current = () =>
-        root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-      root.setAttribute('data-mode', current())
-      const btn = document.getElementById('theme-toggle')
-      if (btn && !btn.dataset.bound) {
-        btn.dataset.bound = '1'
-        btn.addEventListener('click', () => {
-          const next = current() === 'dark' ? 'light' : 'dark'
-          root.dataset.theme = next
-          localStorage.setItem('theme', next)
-          root.setAttribute('data-mode', next)
-        })
-      }
+      const saved = localStorage.getItem('theme')
+      if (saved === 'dark' || saved === 'light') root.dataset.theme = saved
+      const cur = root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      root.setAttribute('data-mode', cur)
     }
-    document.addEventListener('astro:page-load', setupTheme)
-    // 兜底:无 ClientRouter 的环境(如自包含预览)astro:page-load 不会触发,直接初始化一次。
-    if (document.readyState !== 'loading') setupTheme()
-    else document.addEventListener('DOMContentLoaded', setupTheme)
+    function bindToggle() {
+      const btn = document.getElementById('theme-toggle')
+      if (!btn || btn.dataset.bound) return
+      btn.dataset.bound = '1'
+      btn.addEventListener('click', () => {
+        const root = document.documentElement
+        const cur = root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        const next = cur === 'dark' ? 'light' : 'dark'
+        root.dataset.theme = next
+        localStorage.setItem('theme', next)
+        root.setAttribute('data-mode', next)
+      })
+    }
+    // 切页后立即重应用主题(重绘前),再在 page-load 绑定按钮。
+    document.addEventListener('astro:after-swap', applyTheme)
+    document.addEventListener('astro:page-load', () => {
+      applyTheme()
+      bindToggle()
+    })
+    // 兜底:无 ClientRouter 环境(如自包含预览)。
+    if (document.readyState !== 'loading') {
+      applyTheme()
+      bindToggle()
+    } else {
+      document.addEventListener('DOMContentLoaded', () => {
+        applyTheme()
+        bindToggle()
+      })
+    }
   </script>
 </Base>
