@@ -36,10 +36,12 @@ jobs:
       S3_API_ENDPOINT: ${{ secrets.S3_API_ENDPOINT }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
+          # 这里的 20 是跑我们脚本的 Node 版本(固化:node 20 无 node:sqlite → 走 sqlite3 CLI),
+          # 与上面 action 自身运行时无关。checkout/setup-node 用 v5(运行时 Node 24)以消除弃用告警。
           node-version: '20'
 
       # ubuntu runner 自带 sqlite3;显式确认一下,缺了就装。
