@@ -16,7 +16,9 @@ import { dirname, join } from 'node:path'
 import { createWriter, runSqlite } from './db.mjs'
 import { currentEnvironment } from './config.mjs'
 import { collectGithub } from './fetch/github.mjs'
-import { GITHUB_REPOS } from './entities.mjs'
+import { collectNpm } from './fetch/npm.mjs'
+import { collectPypi } from './fetch/pypi.mjs'
+import { GITHUB_REPOS, NPM_PACKAGES, PYPI_PACKAGES } from './entities.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -54,6 +56,18 @@ const SOURCES = {
       writer,
       log,
     })
+    return { metricsWritten, missing }
+  },
+
+  async npm({ writer, capturedAt, log }) {
+    // 公开 API,无需 token。
+    const { metricsWritten, missing } = await collectNpm({ packages: NPM_PACKAGES, capturedAt, writer, log })
+    return { metricsWritten, missing }
+  },
+
+  async pypi({ writer, capturedAt, log }) {
+    // 公开 API(pypistats),无需 token。
+    const { metricsWritten, missing } = await collectPypi({ packages: PYPI_PACKAGES, capturedAt, writer, log })
     return { metricsWritten, missing }
   },
 }

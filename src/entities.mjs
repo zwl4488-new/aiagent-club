@@ -44,3 +44,35 @@ export const GITHUB_REPOS = [
   'modelcontextprotocol/typescript-sdk',
   'modelcontextprotocol/modelcontextprotocol',
 ]
+
+// npm 包(周下载量)。scoped 用 @scope/name。
+/** @type {string[]} */
+export const NPM_PACKAGES = [
+  'langchain',
+  '@langchain/core',
+  '@langchain/langgraph',
+  'llamaindex',
+  'ai', // Vercel AI SDK
+  'openai',
+  '@anthropic-ai/sdk',
+  '@modelcontextprotocol/sdk',
+  '@mastra/core',
+  '@openai/agents',
+]
+
+// PyPI 包(下载量,名字用 PyPI 规范化后的连字符形式)。
+/** @type {string[]} */
+export const PYPI_PACKAGES = [
+  'langchain',
+  'langchain-core',
+  'langgraph',
+  'llama-index',
+  'openai',
+  'anthropic',
+  'crewai',
+  'litellm',
+  'dspy',
+  'mcp',
+  'smolagents',
+  'pydantic-ai',
+]

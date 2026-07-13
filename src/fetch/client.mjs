@@ -1,7 +1,7 @@
 // 通用 HTTP 客户端 — 超时、重试、指数退避 + jitter、限速识别(阶段 1)。
 // 所有源适配器复用。抓取器是无人值守的,网络抖动/二级限速必须自己扛,不能让一次波动毁掉当天数据点。
 
-/** @typedef {{ retries?: number, baseDelayMs?: number, timeoutMs?: number, headers?: Record<string,string> }} FetchOpts */
+/** @typedef {{ retries?: number, baseDelayMs?: number, timeoutMs?: number, headers?: Record<string,string>, notFoundOk?: boolean }} FetchOpts */
 
 const DEFAULTS = { retries: 5, baseDelayMs: 1000, timeoutMs: 30000 }
 
@@ -59,7 +59,7 @@ export function retryAfterSeconds(headers, nowSec) {
  * @returns {Promise<Response>}
  */
 export async function fetchRetry(url, opts = {}) {
-  const { retries, baseDelayMs, timeoutMs, headers, ...init } = { ...DEFAULTS, ...opts }
+  const { retries, baseDelayMs, timeoutMs, headers, notFoundOk, ...init } = { ...DEFAULTS, ...opts }
   let lastErr
   for (let attempt = 0; attempt <= retries; attempt++) {
     const ctrl = new AbortController()
@@ -68,6 +68,8 @@ export async function fetchRetry(url, opts = {}) {
       const res = await fetch(url, { ...init, headers, signal: ctrl.signal })
       clearTimeout(timer)
       if (res.ok) return res
+      // 404 且调用方声明可接受(如"包不存在"):原样返回,让调用方处理为 missing。
+      if (res.status === 404 && notFoundOk) return res
 
       const isRateLimited = res.status === 429 || res.status === 403
       const isServerErr = res.status >= 500
