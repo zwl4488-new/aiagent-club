@@ -1,0 +1,20 @@
+---
+// 构建期静态 SVG sparkline(交互图表以后再上 uPlot)。
+// points: [{captured_at, value}] 升序。单点渲染为一个圆点;无点渲染空。
+const { points = [], w = 72, h = 20 } = Astro.props
+const vals = points.map((p) => p.value)
+const min = Math.min(...vals)
+const max = Math.max(...vals)
+const span = max - min || 1
+const n = points.length
+const x = (i) => (n <= 1 ? w / 2 : (i / (n - 1)) * (w - 2) + 1)
+const y = (v) => h - 1 - ((v - min) / span) * (h - 2)
+const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join(' ')
+const last = n ? points[n - 1] : null
+---
+{n === 0 ? null : (
+  <svg class="spark" width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
+    {n > 1 && <path d={path} fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />}
+    {last && <circle cx={x(n - 1)} cy={y(last.value)} r={n === 1 ? 2.5 : 1.8} fill="var(--accent)" />}
+  </svg>
+)}

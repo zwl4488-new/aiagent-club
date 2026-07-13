@@ -1,0 +1,93 @@
+// 站点数据访问层(构建期)。读 data.db → 出榜单与时序。
+//
+// 与采集器同一纪律:shell 到 sqlite3 CLI(node 20 无 node:sqlite),只读查询。
+// 构建只发生在一个计算环境(CI Actions):先从 R2 pull data.db,再 astro build 读它。
+// 本层只 SELECT,绝不写 —— 站点是纯读端。
+
+import { spawn } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
+
+// 默认取仓库根的 data.db;CI/本地可用 DB_PATH 覆盖。
+const DEFAULT_DB = fileURLToPath(new URL('../../../data.db', import.meta.url))
+const DB_PATH = process.env.DB_PATH || DEFAULT_DB
+
+/**
+ * 只读查询,返回行对象数组。
+ * @param {string} sql
+ * @returns {Promise<any[]>}
+ */
+function query(sql) {
+  return new Promise((resolve, reject) => {
+    const p = spawn('sqlite3', ['-json', '-readonly', DB_PATH], { stdio: ['pipe', 'pipe', 'pipe'] })
+    let out = ''
+    let err = ''
+    p.stdout.on('data', (d) => (out += d))
+    p.stderr.on('data', (d) => (err += d))
+    p.on('error', reject)
+    p.on('close', (code) => {
+      if (code !== 0) return reject(new Error(`sqlite3 exit ${code}: ${err.trim()}`))
+      const t = out.trim()
+      resolve(t ? JSON.parse(t) : [])
+    })
+    p.stdin.end(sql)
+  })
+}
+
+/** 最新快照日期。 */
+export async function latestSnapshot() {
+  const [r] = await query(`SELECT max(captured_at) d FROM metrics`)
+  return r?.d ?? null
+}
+
+/** 数据整体概况(用于首页头部)。 */
+export async function overview() {
+  const [ent] = await query(`SELECT count(*) n FROM entities`)
+  const [met] = await query(`SELECT count(*) n FROM metrics`)
+  const [days] = await query(`SELECT count(DISTINCT captured_at) n FROM metrics`)
+  return { entities: ent?.n ?? 0, metrics: met?.n ?? 0, days: days?.n ?? 0, latest: await latestSnapshot() }
+}
+
+/**
+ * 某 kind 下所有实体在最新快照的指标,按 primaryMetric 降序。
+ * @param {string} kind             github | npm | pypi
+ * @param {string} primaryMetric    排序依据,如 stars / downloads_week / downloads_month
+ * @param {string[]} metrics        要一并取出的指标列
+ * @returns {Promise<Array<{ entity_id: string, name: string, url: string, values: Record<string, number> }>>}
+ */
+export async function ranking(kind, primaryMetric, metrics) {
+  const latest = await latestSnapshot()
+  if (!latest) return []
+  const wantCols = [primaryMetric, ...metrics.filter((m) => m !== primaryMetric)]
+  const rows = await query(`
+    SELECT e.entity_id, e.name, e.url, m.metric, m.value
+    FROM entities e
+    JOIN metrics m ON m.entity_id = e.entity_id
+    WHERE e.kind = '${kind}' AND m.captured_at = '${latest}'
+      AND m.metric IN (${wantCols.map((c) => `'${c}'`).join(',')})
+  `)
+  /** @type {Map<string, any>} */
+  const byEntity = new Map()
+  for (const r of rows) {
+    if (!byEntity.has(r.entity_id)) {
+      byEntity.set(r.entity_id, { entity_id: r.entity_id, name: r.name, url: r.url, values: {} })
+    }
+    byEntity.get(r.entity_id).values[r.metric] = r.value
+  }
+  return [...byEntity.values()].sort((a, b) => (b.values[primaryMetric] ?? 0) - (a.values[primaryMetric] ?? 0))
+}
+
+/**
+ * 某实体某指标的完整时序(升序),给 sparkline 用。
+ * @param {string} entityId
+ * @param {string} metric
+ * @returns {Promise<Array<{ captured_at: string, value: number }>>}
+ */
+export async function series(entityId, metric) {
+  // entityId 来自库内已有值,拼串安全;仍用引号包裹。
+  const safe = entityId.replace(/'/g, "''")
+  return query(`
+    SELECT captured_at, value FROM metrics
+    WHERE entity_id = '${safe}' AND metric = '${metric}'
+    ORDER BY captured_at ASC
+  `)
+}

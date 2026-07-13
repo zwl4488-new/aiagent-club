@@ -7,4 +7,5 @@ data/
 PROJECT_NOTES.md
 node_modules/
 dist/
+.astro/
 .DS_Store

@@ -1,0 +1,62 @@
+---
+import Base from '../layouts/Base.astro'
+import RankTable from './RankTable.astro'
+import { overview, ranking, series } from '../lib/data.mjs'
+import { t } from '../lib/i18n.mjs'
+
+const { locale = 'en' } = Astro.props
+const s = t(locale)
+const path = locale === 'zh' ? '/zh/' : '/'
+const otherPath = locale === 'zh' ? '/' : '/zh/'
+
+const ov = await overview()
+
+// 为一批排名行补上 sparkline 时序(按主指标)。
+async function withSpark(rows, metric) {
+  return Promise.all(rows.map(async (r) => ({ ...r, spark: await series(r.entity_id, metric) })))
+}
+
+const gh = await withSpark(await ranking('github', 'stars', ['stars', 'forks', 'commits']), 'stars')
+const npm = await withSpark(await ranking('npm', 'downloads_week', ['downloads_week']), 'downloads_week')
+const pypi = await withSpark(
+  await ranking('pypi', 'downloads_month', ['downloads_month', 'downloads_week']),
+  'downloads_month'
+)
+
+const cols = s.cols
+const ghCols = [
+  { key: 'stars', label: cols.stars, primary: true },
+  { key: 'forks', label: cols.forks },
+  { key: 'commits', label: cols.commits },
+]
+const npmCols = [{ key: 'downloads_week', label: cols.dl, primary: true }]
+const pypiCols = [
+  { key: 'downloads_month', label: cols.dl, primary: true },
+  { key: 'downloads_week', label: 'Week' },
+]
+---
+<Base locale={locale} title={`aiagent.club — ${s.tagline}`} description={s.intro} path={path}>
+  <header class="site">
+    <div>
+      <h1>aiagent<span class="dot">.</span>club</h1>
+      <p class="tagline">{s.tagline}</p>
+    </div>
+    <a class="langlink" href={otherPath}>{s.switchLang}</a>
+  </header>
+
+  <p class="intro">{s.intro}</p>
+  <p class="early">{s.early}</p>
+
+  <div class="stats">
+    <div class="stat"><b>{ov.entities}</b><span>{s.entities}</span></div>
+    <div class="stat"><b>{ov.metrics}</b><span>{s.dataPoints}</span></div>
+    <div class="stat"><b>{ov.days}</b><span>{s.days}</span></div>
+    <div class="stat"><b>{ov.latest}</b><span>{s.snapshot}</span></div>
+  </div>
+
+  <RankTable title={s.github} note={s.githubNote} rows={gh} columns={ghCols} trendLabel={s.trend} />
+  <RankTable title={s.npm} note={s.npmNote} rows={npm} columns={npmCols} trendLabel={s.trend} />
+  <RankTable title={s.pypi} note={s.pypiNote} rows={pypi} columns={pypiCols} trendLabel={s.trend} />
+
+  <footer class="site">{s.footer}</footer>
+</Base>

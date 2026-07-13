@@ -1,0 +1,38 @@
+---
+import Sparkline from './Sparkline.astro'
+import { compact, full } from '../lib/format.mjs'
+// props:
+//  title, note
+//  rows: [{ name, url, values:{}, spark:[{captured_at,value}] }]
+//  columns: [{ key, label, primary? }]
+//  trendLabel: string
+const { title, note, rows = [], columns = [], trendLabel } = Astro.props
+---
+<section class="rank">
+  <h2>{title}</h2>
+  <p class="note">{note}</p>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          {columns.map((c) => <th>{c.label}</th>)}
+          <th>{trendLabel}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row, i) => (
+          <tr>
+            <td><span class="idx">{i + 1}</span></td>
+            <td><a class="name" href={row.url} target="_blank" rel="noopener">{row.name}</a></td>
+            {columns.map((c) => (
+              <td class={c.primary ? 'primary' : ''} title={full(row.values[c.key])}>{compact(row.values[c.key])}</td>
+            ))}
+            <td><Sparkline points={row.spark} /></td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</section>
