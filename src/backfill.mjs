@@ -200,7 +200,8 @@ async function backfillGithubCumulative({ repos, token, metric, writer, log, dbP
     let pages = 0
     for (;;) {
       const after = cursor ? `"${cursor}"` : 'null'
-      const q = `query { repository(owner:"${owner}", name:"${name}"){ ${cfg.connection}(first:100, after:${after}, orderBy:{field:${cfg.order}, direction:ASC}){ pageInfo{ hasNextPage endCursor } ${cfg.wrap} { ${cfg.ts} } } } }`
+      // 带上 rateLimit,便于额度耗尽前主动睡到重置(stars 全量会耗尽额度多次)。
+      const q = `query { rateLimit { remaining resetAt } repository(owner:"${owner}", name:"${name}"){ ${cfg.connection}(first:100, after:${after}, orderBy:{field:${cfg.order}, direction:ASC}){ pageInfo{ hasNextPage endCursor } ${cfg.wrap} { ${cfg.ts} } } } }`
       const j = await githubGraphQL(q, token)
       const conn = j.data.repository?.[cfg.connection]
       if (!conn) break
@@ -209,6 +210,13 @@ async function backfillGithubCumulative({ repos, token, metric, writer, log, dbP
         dayCount.set(day, (dayCount.get(day) ?? 0) + 1)
       }
       pages++
+      // 额度快见底 → 睡到 resetAt(+2s 缓冲),避免撞硬限速把整批打挂。
+      const rl = j.data.rateLimit
+      if (rl && rl.remaining < 50) {
+        const waitMs = Math.max(0, new Date(rl.resetAt).getTime() - Date.now()) + 2000
+        log(`  额度剩 ${rl.remaining},睡 ${Math.round(waitMs / 1000)}s 到重置(${rl.resetAt})`)
+        await sleep(waitMs)
+      }
       if (!conn.pageInfo.hasNextPage) break
       cursor = conn.pageInfo.endCursor
     }
