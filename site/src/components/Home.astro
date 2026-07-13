@@ -11,16 +11,26 @@ const otherPath = locale === 'zh' ? '/' : '/zh/'
 
 const ov = await overview()
 
-// 为一批排名行补上 sparkline 时序(按主指标)。
-async function withSpark(rows, metric) {
-  return Promise.all(rows.map(async (r) => ({ ...r, spark: await series(r.entity_id, metric) })))
+// 把时序降采样到 ≤N 点(周粒度足够画 sparkline;避免把上千个日点打进 HTML)。
+function downsample(points, max = 48) {
+  if (points.length <= max) return points
+  const step = (points.length - 1) / (max - 1)
+  const out = []
+  for (let i = 0; i < max; i++) out.push(points[Math.round(i * step)])
+  return out
 }
 
-const gh = await withSpark(await ranking('github', 'stars', ['stars', 'forks', 'commits']), 'stars')
-const npm = await withSpark(await ranking('npm', 'downloads_week', ['downloads_week']), 'downloads_week')
+// 为一批排名行补上 sparkline 时序。sparkMetric 用已回填的历史指标,曲线才有内容。
+async function withSpark(rows, sparkMetric) {
+  return Promise.all(rows.map(async (r) => ({ ...r, spark: downsample(await series(r.entity_id, sparkMetric)) })))
+}
+
+// 排序仍按各源主指标;sparkline 走有历史的指标(github→commits 累计,npm/pypi→日下载)。
+const gh = await withSpark(await ranking('github', 'stars', ['stars', 'forks', 'commits']), 'commits')
+const npm = await withSpark(await ranking('npm', 'downloads_week', ['downloads_week']), 'downloads_day')
 const pypi = await withSpark(
   await ranking('pypi', 'downloads_month', ['downloads_month', 'downloads_week']),
-  'downloads_month'
+  'downloads_day'
 )
 
 const cols = s.cols

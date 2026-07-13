@@ -7,11 +7,37 @@
 //   stars / forks / watchers / open_issues / open_prs / releases / commits(默认分支累计)
 // 贡献者多样性不在 GraphQL 里(要 REST + Link header,每 repo 一次),留给后续低频独立采集器。
 
-import { fetchRetry } from './client.mjs'
+import { fetchRetry, sleep, backoffMs } from './client.mjs'
 
 export const GITHUB_GRAPHQL = 'https://api.github.com/graphql'
 export const BATCH_SIZE = 100
 export const SOURCE = 'github'
+
+/**
+ * 发一个 GraphQL 请求并要求返回含 data。
+ * GitHub GraphQL 偶发返回 200 + 顶层 errors 且无 data("Something went wrong...")——
+ * 这类瞬时服务端错误 fetchRetry 不会重试(HTTP 是 200),故在此层退避重试。
+ * 缺 repo 的 NOT_FOUND 会带 partial data(data 存在),不触发重试。
+ * @param {string} query
+ * @param {string} token
+ * @param {{ retries?: number }} [opts]
+ * @returns {Promise<any>}
+ */
+export async function githubGraphQLRequest(query, token, { retries = 4 } = {}) {
+  let lastErr
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const res = await fetchRetry(GITHUB_GRAPHQL, {
+      method: 'POST',
+      headers: { authorization: `bearer ${token}`, 'content-type': 'application/json', 'user-agent': 'aiagent-club' },
+      body: JSON.stringify({ query }),
+    })
+    const json = await res.json()
+    if (json.data) return json
+    lastErr = new Error(`GraphQL no data: ${JSON.stringify(json.errors ?? json).slice(0, 300)}`)
+    if (attempt < retries) await sleep(backoffMs(attempt, 1000, null, Math.random()))
+  }
+  throw lastErr
+}
 
 /**
  * 把数组切成定长块。
@@ -106,20 +132,8 @@ export function parseRepoNode(node) {
  */
 export async function fetchRepoBatch(repos, token) {
   const { query, aliasToRepo } = buildBatchQuery(repos)
-  const res = await fetchRetry(GITHUB_GRAPHQL, {
-    method: 'POST',
-    headers: {
-      authorization: `bearer ${token}`,
-      'content-type': 'application/json',
-      'user-agent': 'aiagent-club',
-    },
-    body: JSON.stringify({ query }),
-  })
-  const json = await res.json()
-  // GraphQL 可能 200 + 顶层 errors。缺 repo 的 NOT_FOUND 是预期的,忽略;其余错误若导致 data 缺失才抛。
-  if (!json.data) {
-    throw new Error(`GraphQL no data: ${JSON.stringify(json.errors ?? json).slice(0, 400)}`)
-  }
+  // 缺 repo 的 NOT_FOUND 会带 partial data,正常处理;瞬时"无 data"错误由 helper 退避重试。
+  const json = await githubGraphQLRequest(query, token)
   const results = []
   const missing = []
   for (const [alias, repo] of Object.entries(aliasToRepo)) {
