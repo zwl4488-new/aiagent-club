@@ -1,7 +1,7 @@
 ---
 import Base from '../layouts/Base.astro'
 import RankTable from './RankTable.astro'
-import { overview, ranking, series } from '../lib/data.mjs'
+import { overview, ranking, seriesByKind } from '../lib/data.mjs'
 import { t } from '../lib/i18n.mjs'
 
 const { locale = 'en' } = Astro.props
@@ -20,16 +20,18 @@ function downsample(points, max = 48) {
   return out
 }
 
-// 为一批排名行补上 sparkline 时序。sparkMetric 用已回填的历史指标,曲线才有内容。
-async function withSpark(rows, sparkMetric) {
-  return Promise.all(rows.map(async (r) => ({ ...r, spark: downsample(await series(r.entity_id, sparkMetric)) })))
+// 为一批排名行补上 sparkline 时序。一次批量查该 kind 的时序(避免每实体一次子进程)。
+async function withSpark(rows, kind, sparkMetric) {
+  const all = await seriesByKind(kind, sparkMetric)
+  return rows.map((r) => ({ ...r, spark: downsample(all.get(r.entity_id) ?? []) }))
 }
 
 // 排序仍按各源主指标;sparkline 走有历史的指标(github→commits 累计,npm/pypi→日下载)。
-const gh = await withSpark(await ranking('github', 'stars', ['stars', 'forks', 'commits']), 'commits')
-const npm = await withSpark(await ranking('npm', 'downloads_week', ['downloads_week']), 'downloads_day')
+const gh = await withSpark(await ranking('github', 'stars', ['stars', 'forks', 'commits']), 'github', 'commits')
+const npm = await withSpark(await ranking('npm', 'downloads_week', ['downloads_week']), 'npm', 'downloads_day')
 const pypi = await withSpark(
   await ranking('pypi', 'downloads_month', ['downloads_month', 'downloads_week']),
+  'pypi',
   'downloads_day'
 )
 

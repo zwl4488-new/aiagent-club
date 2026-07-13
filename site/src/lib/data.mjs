@@ -91,3 +91,26 @@ export async function series(entityId, metric) {
     ORDER BY captured_at ASC
   `)
 }
+
+/**
+ * 一次查出某 kind 下所有实体某指标的时序,返回 entity_id → 时序数组。
+ * 避免 N+1(每实体一次 sqlite 子进程),把整页 sparkline 查询压成一次。
+ * @param {string} kind
+ * @param {string} metric
+ * @returns {Promise<Map<string, Array<{ captured_at: string, value: number }>>>}
+ */
+export async function seriesByKind(kind, metric) {
+  const rows = await query(`
+    SELECT m.entity_id, m.captured_at, m.value
+    FROM metrics m JOIN entities e ON e.entity_id = m.entity_id
+    WHERE e.kind = '${kind}' AND m.metric = '${metric}'
+    ORDER BY m.entity_id, m.captured_at ASC
+  `)
+  /** @type {Map<string, Array<{ captured_at: string, value: number }>>} */
+  const map = new Map()
+  for (const r of rows) {
+    if (!map.has(r.entity_id)) map.set(r.entity_id, [])
+    map.get(r.entity_id).push({ captured_at: r.captured_at, value: r.value })
+  }
+  return map
+}
