@@ -26,8 +26,8 @@ async function withSpark(rows, kind, sparkMetric) {
   return rows.map((r) => ({ ...r, spark: downsample(all.get(r.entity_id) ?? []) }))
 }
 
-// 排序仍按各源主指标;sparkline 走有历史的指标(github→commits 累计,npm/pypi→日下载)。
-const gh = await withSpark(await ranking('github', 'stars', ['stars', 'forks', 'commits']), 'github', 'commits')
+// 排序仍按各源主指标;sparkline 走有历史的指标(github→stars 累计,npm/pypi→日下载)。
+const gh = await withSpark(await ranking('github', 'stars', ['stars', 'forks', 'commits']), 'github', 'stars')
 const npm = await withSpark(await ranking('npm', 'downloads_week', ['downloads_week']), 'npm', 'downloads_day')
 const pypi = await withSpark(
   await ranking('pypi', 'downloads_month', ['downloads_month', 'downloads_week']),
