@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css'
+import { ClientRouter } from 'astro:transitions'
 // props: locale ('en'|'zh'), title, description, path ('/' or '/zh/')
 const { locale = 'en', title, description, path = '/' } = Astro.props
 const SITE = 'https://aiagent.club'
@@ -22,6 +23,8 @@ const SITE = 'https://aiagent.club'
       const saved = localStorage.getItem('theme')
       if (saved === 'dark' || saved === 'light') document.documentElement.dataset.theme = saved
     </script>
+    <!-- SPA 式导航:/ ↔ /zh/ 无整页刷新;URL 结构与 SEO 不变。 -->
+    <ClientRouter />
   </head>
   <body>
     <div class="wrap">

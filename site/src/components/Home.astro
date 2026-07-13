@@ -56,7 +56,7 @@ const pypiCols = [
         <svg class="sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
         <svg class="moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>
       </button>
-      <a class="langlink" href={otherPath}>{s.switchLang}</a>
+      <a class="langlink" href={otherPath} data-astro-prefetch="hover">{s.switchLang}</a>
     </div>
   </header>
 
@@ -77,19 +77,27 @@ const pypiCols = [
   <footer class="site">{s.footer}</footer>
 
   <script is:inline>
-    ;(() => {
+    // 开了 ClientRouter 后,is:inline 脚本不在 SPA 跳转后重跑;把绑定挂到 astro:page-load,
+    // 它在首屏与每次视图切换后都会触发,保证切换语言后按钮仍可用。document 跨切换不被替换。
+    function setupTheme() {
       const root = document.documentElement
-      const btn = document.getElementById('theme-toggle')
       const current = () =>
         root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-      const sync = () => root.setAttribute('data-mode', current())
-      sync()
-      btn?.addEventListener('click', () => {
-        const next = current() === 'dark' ? 'light' : 'dark'
-        root.dataset.theme = next
-        localStorage.setItem('theme', next)
-        sync()
-      })
-    })()
+      root.setAttribute('data-mode', current())
+      const btn = document.getElementById('theme-toggle')
+      if (btn && !btn.dataset.bound) {
+        btn.dataset.bound = '1'
+        btn.addEventListener('click', () => {
+          const next = current() === 'dark' ? 'light' : 'dark'
+          root.dataset.theme = next
+          localStorage.setItem('theme', next)
+          root.setAttribute('data-mode', next)
+        })
+      }
+    }
+    document.addEventListener('astro:page-load', setupTheme)
+    // 兜底:无 ClientRouter 的环境(如自包含预览)astro:page-load 不会触发,直接初始化一次。
+    if (document.readyState !== 'loading') setupTheme()
+    else document.addEventListener('DOMContentLoaded', setupTheme)
   </script>
 </Base>
