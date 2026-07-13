@@ -1,0 +1,19 @@
+{
+  "generated_at": "2026-07-13T03:16:34.273Z",
+  "latest_snapshot": "2026-07-13",
+  "entities": 27,
+  "metrics_rows": 189,
+  "entities_by_kind": {
+    "github": 27
+  },
+  "last_runs": [
+    {
+      "source": "github",
+      "environment": "local",
+      "status": "ok",
+      "rows_written": 189,
+      "started_at": "2026-07-13T03:16:09.822Z",
+      "finished_at": "2026-07-13T03:16:32.100Z"
+    }
+  ]
+}
