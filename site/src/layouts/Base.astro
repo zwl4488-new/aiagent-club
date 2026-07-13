@@ -16,6 +16,12 @@ const SITE = 'https://aiagent.club'
     <link rel="alternate" hreflang="en" href={SITE + '/'} />
     <link rel="alternate" hreflang="zh" href={SITE + '/zh/'} />
     <link rel="alternate" hreflang="x-default" href={SITE + '/'} />
+    <meta name="theme-color" content="#6366f1" />
+    <!-- 主题在首帧前就应用,避免刷新时亮/暗闪烁(FOUC)。 -->
+    <script is:inline>
+      const saved = localStorage.getItem('theme')
+      if (saved === 'dark' || saved === 'light') document.documentElement.dataset.theme = saved
+    </script>
   </head>
   <body>
     <div class="wrap">
