@@ -1,19 +1,37 @@
 {
-  "generated_at": "2026-07-13T03:54:03.108Z",
+  "generated_at": "2026-07-13T16:16:20.765Z",
   "latest_snapshot": "2026-07-13",
-  "entities": 27,
-  "metrics_rows": 189,
+  "entities": 49,
+  "metrics_rows": 55468,
   "entities_by_kind": {
-    "github": 27
+    "github": 27,
+    "pypi": 12,
+    "npm": 10
   },
   "last_runs": [
     {
       "source": "github",
       "environment": "actions",
+      "status": "error",
+      "rows_written": 0,
+      "started_at": "2026-07-13T16:14:48.632Z",
+      "finished_at": "2026-07-13T16:16:16.245Z"
+    },
+    {
+      "source": "npm",
+      "environment": "actions",
       "status": "ok",
-      "rows_written": 189,
-      "started_at": "2026-07-13T03:53:41.159Z",
-      "finished_at": "2026-07-13T03:54:02.135Z"
+      "rows_written": 10,
+      "started_at": "2026-07-13T16:16:16.245Z",
+      "finished_at": "2026-07-13T16:16:17.842Z"
+    },
+    {
+      "source": "pypi",
+      "environment": "actions",
+      "status": "ok",
+      "rows_written": 36,
+      "started_at": "2026-07-13T16:16:17.842Z",
+      "finished_at": "2026-07-13T16:16:18.684Z"
     }
   ]
 }
