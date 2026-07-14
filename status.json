@@ -1,37 +1,46 @@
 {
-  "generated_at": "2026-07-14T04:17:22.049Z",
+  "generated_at": "2026-07-14T15:14:49.959Z",
   "latest_snapshot": "2026-07-14",
-  "entities": 49,
-  "metrics_rows": 72348,
+  "entities": 474,
+  "metrics_rows": 84187,
   "entities_by_kind": {
-    "github": 27,
-    "pypi": 12,
-    "npm": 10
+    "openrouter": 343,
+    "github": 68,
+    "pypi": 36,
+    "npm": 27
   },
   "last_runs": [
     {
       "source": "github",
       "environment": "actions",
-      "status": "ok",
-      "rows_written": 189,
-      "started_at": "2026-07-14T04:16:39.610Z",
-      "finished_at": "2026-07-14T04:17:11.619Z"
+      "status": "error",
+      "rows_written": 0,
+      "started_at": "2026-07-14T15:11:45.256Z",
+      "finished_at": "2026-07-14T15:14:00.959Z"
     },
     {
       "source": "npm",
       "environment": "actions",
       "status": "ok",
-      "rows_written": 10,
-      "started_at": "2026-07-14T04:17:11.619Z",
-      "finished_at": "2026-07-14T04:17:12.740Z"
+      "rows_written": 27,
+      "started_at": "2026-07-14T15:14:00.959Z",
+      "finished_at": "2026-07-14T15:14:04.625Z"
+    },
+    {
+      "source": "openrouter",
+      "environment": "actions",
+      "status": "ok",
+      "rows_written": 1029,
+      "started_at": "2026-07-14T15:14:47.396Z",
+      "finished_at": "2026-07-14T15:14:47.445Z"
     },
     {
       "source": "pypi",
       "environment": "actions",
-      "status": "ok",
-      "rows_written": 36,
-      "started_at": "2026-07-14T04:17:12.740Z",
-      "finished_at": "2026-07-14T04:17:18.364Z"
+      "status": "error",
+      "rows_written": 0,
+      "started_at": "2026-07-14T15:14:04.626Z",
+      "finished_at": "2026-07-14T15:14:47.396Z"
     }
   ]
 }
