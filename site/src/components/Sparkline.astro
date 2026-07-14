@@ -29,6 +29,7 @@ const uid = 'sg' + Math.abs(points.reduce((a, p, i) => a + p.value * (i + 1), n)
         <path d={line} fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"></path>
       </>
     )}
-    {last && <circle cx={x(n - 1)} cy={y(last.value)} r={n === 1 ? 2.6 : 2} fill="var(--accent)" stroke="var(--bg)" stroke-width="1"></circle>}
+    {/* 多点曲线不再画末端点(只留线+渐变);单点项目仍画一个点,否则空白。 */}
+    {n === 1 && last && <circle cx={x(0)} cy={y(last.value)} r="2.4" fill="var(--accent)"></circle>}
   </svg>
 )}
