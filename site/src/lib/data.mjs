@@ -33,10 +33,16 @@ function query(sql) {
   })
 }
 
-/** 最新快照日期。 */
+/**
+ * 最新"完整快照"日期。用 downloads_week 当信号:它只由每日采集器写、回填从不写,
+ * 故 max(captured_at where metric='downloads_week') = 最近一次完整日常采集,
+ * 不会被回填按事件日期写的零星行(如今天某 repo 有新 star)带偏。
+ */
 export async function latestSnapshot() {
-  const [r] = await query(`SELECT max(captured_at) d FROM metrics`)
-  return r?.d ?? null
+  const [r] = await query(`SELECT max(captured_at) d FROM metrics WHERE metric = 'downloads_week'`)
+  if (r?.d) return r.d
+  const [f] = await query(`SELECT max(captured_at) d FROM metrics`)
+  return f?.d ?? null
 }
 
 /** 数据整体概况(用于首页头部)。 */
@@ -55,15 +61,20 @@ export async function overview() {
  * @returns {Promise<Array<{ entity_id: string, name: string, url: string, values: Record<string, number> }>>}
  */
 export async function ranking(kind, primaryMetric, metrics) {
-  const latest = await latestSnapshot()
-  if (!latest) return []
   const wantCols = [primaryMetric, ...metrics.filter((m) => m !== primaryMetric)]
+  const inList = wantCols.map((c) => `'${c}'`).join(',')
+  // 取每个项目每个指标"各自的最新值",而非依赖全局同一个快照日期。
+  // 回填按事件日期写行(某天有 star/fork 就多一行),全局 max(captured_at) 会落在只有零星
+  // 回填行的日期上,导致榜单看起来"缺项目/整源为空"。按 entity+metric 各取其 max 才稳。
   const rows = await query(`
-    SELECT e.entity_id, e.name, e.url, m.metric, m.value
-    FROM entities e
-    JOIN metrics m ON m.entity_id = e.entity_id
-    WHERE e.kind = '${kind}' AND m.captured_at = '${latest}'
-      AND m.metric IN (${wantCols.map((c) => `'${c}'`).join(',')})
+    SELECT m.entity_id, e.name, e.url, m.metric, m.value
+    FROM metrics m
+    JOIN entities e ON e.entity_id = m.entity_id
+    WHERE e.kind = '${kind}' AND m.metric IN (${inList})
+      AND m.captured_at = (
+        SELECT max(m2.captured_at) FROM metrics m2
+        WHERE m2.entity_id = m.entity_id AND m2.metric = m.metric
+      )
   `)
   /** @type {Map<string, any>} */
   const byEntity = new Map()
