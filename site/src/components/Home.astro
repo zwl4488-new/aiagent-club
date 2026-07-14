@@ -1,7 +1,8 @@
 ---
 import Base from '../layouts/Base.astro'
 import RankTable from './RankTable.astro'
-import { overview, ranking, seriesByKind } from '../lib/data.mjs'
+import Movers from './Movers.astro'
+import { overview, ranking, seriesByKind, movers } from '../lib/data.mjs'
 import { t } from '../lib/i18n.mjs'
 
 const { locale = 'en' } = Astro.props
@@ -27,6 +28,9 @@ async function withSpark(rows, kind, sparkMetric) {
 }
 
 // 排序仍按各源主指标;sparkline 走有历史的指标(github→stars 累计,npm/pypi→日下载)。
+// 本周异动:7 天 star 增量榜(动量,独家信号)。
+const starMovers = (await movers('github', 'stars', 7)).sort((a, b) => b.delta - a.delta).slice(0, 10)
+
 const gh = await withSpark(await ranking('github', 'stars', ['stars', 'forks', 'commits']), 'github', 'stars')
 const npm = await withSpark(await ranking('npm', 'downloads_week', ['downloads_week']), 'npm', 'downloads_day')
 const pypi = await withSpark(
@@ -71,6 +75,8 @@ const pypiCols = [
     <div class="stat"><b>{ov.days}</b><span>{s.days}</span></div>
     <div class="stat"><b>{ov.latest}</b><span>{s.snapshot}</span></div>
   </div>
+
+  <Movers title={s.moversTitle} note={s.moversNote} rows={starMovers} gained={s.gained} now={s.now} />
 
   <RankTable title={s.github} note={s.githubNote} rows={gh} columns={ghCols} trendLabel={s.trend} />
   <RankTable title={s.npm} note={s.npmNote} rows={npm} columns={npmCols} trendLabel={s.trend} />

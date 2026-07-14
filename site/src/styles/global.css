@@ -75,6 +75,30 @@ h1 .dot { color: var(--accent); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
+/* 本周异动 —— 独家信号,做成醒目卡片,与普通榜单区分 */
+.movers {
+  margin-top: 2rem; padding: 1.1rem 1.25rem 1.25rem;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 7%, var(--bg)), var(--bg));
+}
+.movers-head h2 { font-size: 1.15rem; margin: 0 0 0.15rem; display: flex; align-items: center; gap: 0.5rem; }
+.movers-head h2::before { content: ''; width: 8px; height: 8px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+.movers-head .note { color: var(--fg-soft); font-size: 0.85rem; margin: 0 0 0.75rem; max-width: 62ch; }
+.movers-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.15rem; font-variant-numeric: tabular-nums; }
+.movers-list li {
+  display: grid; grid-template-columns: 1.4rem minmax(0, 1fr) auto auto auto; align-items: center; gap: 0.6rem;
+  padding: 0.32rem 0.4rem; border-radius: 6px;
+}
+.movers-list li:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.movers-list .rank { color: var(--fg-soft); font-size: 0.85rem; text-align: right; }
+.movers-list .name { color: var(--fg); text-decoration: none; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movers-list .name:hover { color: var(--accent); }
+.movers-list .spark { line-height: 0; }
+.movers-list .delta { color: var(--accent); font-weight: 700; display: inline-flex; align-items: baseline; gap: 0.35rem; justify-content: flex-end; min-width: 6.5rem; }
+.movers-list .delta .up { font-size: 0.7em; }
+.movers-list .delta .pct { color: var(--fg-soft); font-weight: 600; font-size: 0.82em; }
+.movers-list .now { color: var(--fg-soft); font-size: 0.88rem; text-align: right; min-width: 3.5rem; }
+
 section.rank { margin-top: 2.75rem; }
 section.rank h2 { font-size: 1.15rem; margin: 0 0 0.15rem; }
 section.rank .note { color: var(--fg-soft); font-size: 0.85rem; margin: 0 0 0.9rem; }

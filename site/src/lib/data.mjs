@@ -125,3 +125,41 @@ export async function seriesByKind(kind, metric) {
   }
   return map
 }
+
+/** ISO 日期减 n 天。 */
+function minusDays(isoDay, n) {
+  const d = new Date(isoDay + 'T00:00:00Z')
+  return new Date(d.getTime() - n * 86400000).toISOString().slice(0, 10)
+}
+
+/**
+ * 动量 / 异动:某 kind 某(累计型)指标在 trailing 窗口内的增量。
+ * 对每个实体取"最新值"与"窗口前那天的值"(≤ cutoff 的最后一个点),算 delta 与 %。
+ * 只用于累计型指标(stars/forks/commits/releases/downloads_month 等单调或近似单调的量)。
+ * @param {string} kind
+ * @param {string} metric
+ * @param {number} windowDays
+ * @returns {Promise<Array<{ entity_id, name, url, latest, prev, delta, pct, spark }>>}
+ */
+export async function movers(kind, metric, windowDays) {
+  const seriesMap = await seriesByKind(kind, metric)
+  const ents = await query(`SELECT entity_id, name, url FROM entities WHERE kind = '${kind}'`)
+  const meta = new Map(ents.map((e) => [e.entity_id, e]))
+  const out = []
+  for (const [id, s] of seriesMap) {
+    if (s.length < 2) continue
+    const last = s[s.length - 1]
+    const cutoff = minusDays(last.captured_at, windowDays)
+    // 窗口前的基准:captured_at ≤ cutoff 的最后一个点(没有则跳过,历史不足)。
+    let prev = null
+    for (let i = s.length - 1; i >= 0; i--) {
+      if (s[i].captured_at <= cutoff) { prev = s[i]; break }
+    }
+    if (!prev || prev.captured_at === last.captured_at) continue
+    const delta = last.value - prev.value
+    const pct = prev.value ? delta / prev.value : null
+    const m = meta.get(id) || {}
+    out.push({ entity_id: id, name: m.name || id, url: m.url, latest: last.value, prev: prev.value, delta, pct, spark: s })
+  }
+  return out
+}
