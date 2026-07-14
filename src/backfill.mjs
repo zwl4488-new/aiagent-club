@@ -53,10 +53,14 @@ const githubGraphQL = githubGraphQLRequest
 // ── npm 日下载(range 端点,≤540 天分段;深度到包首发/2015)──
 const NPM_FLOOR = '2015-01-10'
 
-async function backfillNpmDaily({ packages, writer, log }) {
+async function backfillNpmDaily({ packages, writer, log, dbPath }) {
   let written = 0
   for (const pkg of packages) {
     const entity_id = `npm:${pkg}`
+    if (dbPath && (await alreadyBackfilled(dbPath, entity_id, 'downloads_day'))) {
+      log(`  npm ${pkg}: 已有历史,跳过`)
+      continue
+    }
     let end = dayStart(isoDay(new Date())) // 今天 UTC
     let pkgDays = 0
     // 从今往回按 539 天窗口滚动,直到窗口全零(包尚未存在)或触底。
@@ -95,10 +99,14 @@ async function backfillNpmDaily({ packages, writer, log }) {
 }
 
 // ── PyPI 日下载(pypistats overall,仅 180 天,取 without_mirrors)──
-async function backfillPypiDaily({ packages, writer, log }) {
+async function backfillPypiDaily({ packages, writer, log, dbPath }) {
   let written = 0
   for (const pkg of packages) {
     const entity_id = `pypi:${pkg}`
+    if (dbPath && (await alreadyBackfilled(dbPath, entity_id, 'downloads_day'))) {
+      log(`  pypi ${pkg}: 已有历史,跳过`)
+      continue
+    }
     const res = await fetchRetry(`https://pypistats.org/api/packages/${encodeURIComponent(pkg)}/overall`, {
       notFoundOk: true,
       headers: { 'user-agent': UA },
