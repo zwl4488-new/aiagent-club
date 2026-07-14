@@ -61,6 +61,7 @@ async function backfillNpmDaily({ packages, writer, log, dbPath }) {
       log(`  npm ${pkg}: 已有历史,跳过`)
       continue
     }
+    if (written > 0) await sleep(500) // 温和,避免 npm downloads API 429
     let end = dayStart(isoDay(new Date())) // 今天 UTC
     let pkgDays = 0
     // 从今往回按 539 天窗口滚动,直到窗口全零(包尚未存在)或触底。
