@@ -10,7 +10,9 @@
 import { fetchRetry, sleep, backoffMs } from './client.mjs'
 
 export const GITHUB_GRAPHQL = 'https://api.github.com/graphql'
-export const BATCH_SIZE = 100
+// 每批 repo 数。太大时单个 GraphQL 查询过重——每个 repo 的 history{totalCount} 要数全部
+// 提交,很重;实测 35 个一批会网关超时(502),20 个稳(~8s)。取 20 留足余量。
+export const BATCH_SIZE = 20
 export const SOURCE = 'github'
 
 /**

@@ -4,10 +4,12 @@
 // 一次响应给 last_day / last_week / last_month 三个窗口——一个请求拿三个指标。
 // pypistats 是志愿者服务,请温和使用:逐包顺序请求,不并发轰炸。
 
-import { fetchRetry } from './client.mjs'
+import { fetchRetry, sleep } from './client.mjs'
 
 export const SOURCE = 'pypi'
 export const PYPISTATS_API = 'https://pypistats.org/api/packages'
+// 包间隔:pypistats 是志愿者服务,包多时连打会 429。逐包之间歇一下。
+const GAP_MS = 400
 
 /**
  * 从 pypistats recent 响应摊平出三个窗口的下载指标。纯函数,便于测试。
@@ -53,7 +55,10 @@ export async function collectPypi({ packages, capturedAt, writer, log = () => {}
   /** @type {string[]} */
   const missing = []
 
+  let first = true
   for (const pkg of packages) {
+    if (!first) await sleep(GAP_MS) // 温和使用 pypistats,避免 429
+    first = false
     const metrics = await fetchPypiRecent(pkg)
     if (!metrics || Object.keys(metrics).length === 0) {
       missing.push(pkg)
