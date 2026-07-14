@@ -28,8 +28,11 @@ async function withSpark(rows, kind, sparkMetric) {
 }
 
 // 排序仍按各源主指标;sparkline 走有历史的指标(github→stars 累计,npm/pypi→日下载)。
-// 本周异动:7 天 star 增量榜(动量,独家信号)。
-const starMovers = (await movers('github', 'stars', 7)).sort((a, b) => b.delta - a.delta).slice(0, 10)
+// 本周异动:7 天 star 增量榜(动量,独家信号)。spark 降采样,避免把完整时序打进 HTML。
+const starMovers = (await movers('github', 'stars', 7))
+  .sort((a, b) => b.delta - a.delta)
+  .slice(0, 10)
+  .map((r) => ({ ...r, spark: downsample(r.spark) }))
 
 const gh = await withSpark(await ranking('github', 'stars', ['stars', 'forks', 'commits']), 'github', 'stars')
 const npm = await withSpark(await ranking('npm', 'downloads_week', ['downloads_week']), 'npm', 'downloads_day')
