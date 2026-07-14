@@ -5,6 +5,7 @@ data/
 .env
 .env.local
 PROJECT_NOTES.md
+docs/
 node_modules/
 dist/
 .astro/
