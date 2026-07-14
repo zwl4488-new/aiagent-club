@@ -18,6 +18,7 @@ import { currentEnvironment } from './config.mjs'
 import { collectGithub } from './fetch/github.mjs'
 import { collectNpm } from './fetch/npm.mjs'
 import { collectPypi } from './fetch/pypi.mjs'
+import { collectOpenRouterModels, collectOpenRouterUsage } from './fetch/openrouter.mjs'
 import { GITHUB_REPOS, NPM_PACKAGES, PYPI_PACKAGES } from './entities.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -69,6 +70,24 @@ const SOURCES = {
     // 公开 API(pypistats),无需 token。
     const { metricsWritten, missing } = await collectPypi({ packages: PYPI_PACKAGES, capturedAt, writer, log })
     return { metricsWritten, missing }
+  },
+
+  async openrouter({ writer, capturedAt, log }) {
+    // /models 公开无 key(定价 + 模型元信息);用量排行需 OPENROUTER_API_KEY,有则带上。
+    const m = await collectOpenRouterModels({ capturedAt, writer, log })
+    let metricsWritten = m.metricsWritten
+    const key = process.env.OPENROUTER_API_KEY
+    if (key) {
+      try {
+        const u = await collectOpenRouterUsage({ capturedAt, writer, apiKey: key, log })
+        metricsWritten += u.metricsWritten
+      } catch (e) {
+        log(`openrouter usage 跳过:${e instanceof Error ? e.message : e}`)
+      }
+    } else {
+      log('openrouter usage:无 OPENROUTER_API_KEY,跳过用量排行')
+    }
+    return { metricsWritten, missing: [] }
   },
 }
 
