@@ -79,7 +79,7 @@ jobs:
           OSS_SECRET: ${{ secrets.ALIYUN_ACCESSKEY_SECRET }}
           OSS_BUCKET: ${{ secrets.ALIYUN_OSS_BUCKET }}
         run: |
-          curl -sSL https://gosspublic.alicdn.com/ossutil/1.7.19/ossutil64 -o /tmp/ossutil
+          curl -sSL https://gosspublic.alicdn.com/ossutil/1.7.18/ossutil64 -o /tmp/ossutil
           chmod +x /tmp/ossutil
           /tmp/ossutil config -e "$OSS_ENDPOINT" -i "$OSS_ID" -k "$OSS_SECRET" -L CH
           # -r 递归、-f 覆盖同名。dist/ 内容整体上传到 bucket 根。实体集只增不减,孤儿对象极少,
