@@ -1,0 +1,24 @@
+---
+import Base from '../../../layouts/Base.astro'
+import EntityDetail from '../../../components/EntityDetail.astro'
+import { buildEntityPages } from '../../../lib/detail.mjs'
+import { t } from '../../../lib/i18n.mjs'
+import { compact } from '../../../lib/format.mjs'
+
+export async function getStaticPaths() {
+  const pages = await buildEntityPages()
+  return pages.map((entity) => ({ params: { slug: entity.slug }, props: { entity } }))
+}
+
+const { entity } = Astro.props
+const s = t('zh')
+const path = `/zh/p/${entity.slug}`
+const kindLabel = s.kindLabel[entity.kind] ?? entity.kind
+const stat =
+  entity.primaryValue != null ? `${compact(entity.primaryValue)} ${s.metricLabel[entity.primaryMetric] ?? ''}。` : ''
+const title = `${entity.name} — ${kindLabel} | aiagent.club`
+const description = s.detail.metaDesc(entity.name, kindLabel, stat)
+---
+<Base locale="zh" title={title} description={description} path={path} altEn={`/p/${entity.slug}`} altZh={path}>
+  <EntityDetail entity={entity} s={s} base="/zh" />
+</Base>

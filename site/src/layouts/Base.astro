@@ -1,8 +1,9 @@
 ---
 import '../styles/global.css'
 import { ClientRouter } from 'astro:transitions'
-// props: locale ('en'|'zh'), title, description, path ('/' or '/zh/')
-const { locale = 'en', title, description, path = '/' } = Astro.props
+// props: locale ('en'|'zh'), title, description, path (当前页路径)
+//        altEn / altZh: 本页的英文 / 中文对应路径(hreflang 互指)。默认首页。
+const { locale = 'en', title, description, path = '/', altEn = '/', altZh = '/zh/' } = Astro.props
 const SITE = 'https://aiagent.club'
 ---
 <!doctype html>
@@ -13,10 +14,10 @@ const SITE = 'https://aiagent.club'
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={SITE + path} />
-    <!-- hreflang 互指:/ 英文兼 x-default,/zh/ 中文 -->
-    <link rel="alternate" hreflang="en" href={SITE + '/'} />
-    <link rel="alternate" hreflang="zh" href={SITE + '/zh/'} />
-    <link rel="alternate" hreflang="x-default" href={SITE + '/'} />
+    <!-- hreflang 互指:英文兼 x-default,中文对应页。 -->
+    <link rel="alternate" hreflang="en" href={SITE + altEn} />
+    <link rel="alternate" hreflang="zh" href={SITE + altZh} />
+    <link rel="alternate" hreflang="x-default" href={SITE + altEn} />
     <meta name="theme-color" content="#6366f1" />
     <!-- 主题在首帧前就应用,避免刷新时亮/暗闪烁(FOUC)。 -->
     <script is:inline>

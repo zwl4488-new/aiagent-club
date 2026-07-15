@@ -1,8 +1,9 @@
 ---
 import Sparkline from './Sparkline.astro'
 import { compact, full } from '../lib/format.mjs'
-// props: title, note, rows [{name,url,latest,delta,pct,spark}], strings {gained, now}
-const { title, note, rows = [], gained, now } = Astro.props
+// props: title, note, rows [{entity_id,name,url,latest,delta,pct,spark}], strings {gained, now}, base
+const { title, note, rows = [], gained, now, base = '' } = Astro.props
+const detailHref = (entityId) => `${base}/p/${entityId.replace(':', '/')}`
 ---
 <section class="movers">
   <div class="movers-head">
@@ -13,7 +14,7 @@ const { title, note, rows = [], gained, now } = Astro.props
     {rows.map((r, i) => (
       <li>
         <span class="rank">{i + 1}</span>
-        <a class="name" href={r.url} target="_blank" rel="noopener">{r.name}</a>
+        <a class="name" href={detailHref(r.entity_id)}>{r.name}</a>
         <span class="spark"><Sparkline points={r.spark} w={64} h={20} /></span>
         <span class="delta" title={`${gained}: +${full(r.delta)}`}>
           <span class="up">▲</span>{compact(r.delta)}

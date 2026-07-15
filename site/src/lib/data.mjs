@@ -141,6 +141,33 @@ export async function latestMap(metric) {
   return new Map(rows.map((r) => [r.entity_id, r.value]))
 }
 
+/** 全部实体(用于逐项目 SEO 详情页 getStaticPaths)。 */
+export async function allEntities() {
+  return query(`SELECT entity_id, kind, name, url, category, first_seen FROM entities ORDER BY kind, name`)
+}
+
+/**
+ * 每个实体每个指标的"最新值 + 日期",一次查询。返回 entity_id → { metric: {value, captured_at} }。
+ * 详情页要展示某实体全部指标,故不限 metric。
+ * @returns {Promise<Map<string, Record<string, {value:number, captured_at:string}>>>}
+ */
+export async function latestMetricsAll() {
+  const rows = await query(`
+    SELECT m.entity_id, m.metric, m.value, m.captured_at
+    FROM metrics m
+    WHERE m.captured_at = (
+      SELECT max(captured_at) FROM metrics m2 WHERE m2.entity_id = m.entity_id AND m2.metric = m.metric
+    )
+  `)
+  /** @type {Map<string, Record<string, {value:number, captured_at:string}>>} */
+  const map = new Map()
+  for (const r of rows) {
+    if (!map.has(r.entity_id)) map.set(r.entity_id, {})
+    map.get(r.entity_id)[r.metric] = { value: r.value, captured_at: r.captured_at }
+  }
+  return map
+}
+
 /** ISO 日期减 n 天。 */
 function minusDays(isoDay, n) {
   const d = new Date(isoDay + 'T00:00:00Z')

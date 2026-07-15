@@ -1,0 +1,69 @@
+---
+import Sparkline from './Sparkline.astro'
+import { compact, full } from '../lib/format.mjs'
+import { SHOW_METRICS } from '../lib/detail.mjs'
+
+// props: entity(buildEntityPages 的一条), locale, s(翻译), base('' | '/zh')
+const { entity, s, base = '' } = Astro.props
+const k = entity.kind
+const kindLabel = s.kindLabel[k] ?? k
+const ml = s.metricLabel
+
+// 指标表:按 SHOW_METRICS 顺序,只留库里有值的。
+const showKeys = (SHOW_METRICS[k] ?? Object.keys(entity.metrics)).filter((m) => entity.metrics[m] != null)
+const primaryVal = entity.primaryValue
+const primaryLabel = entity.primaryMetric ? ml[entity.primaryMetric] ?? entity.primaryMetric : null
+const hasTrend = entity.spark.length >= 2
+const lastUpdated = entity.primaryMetric ? entity.metrics[entity.primaryMetric]?.captured_at : null
+---
+<article class="detail">
+  <nav class="crumb"><a href={`${base}/`}>{s.detail.backHome}</a></nav>
+
+  <header class="detail-head">
+    <span class="kind-badge">{kindLabel}</span>
+    <h1>{entity.name}</h1>
+    <p class="detail-meta">
+      {entity.category && <span>{entity.category}</span>}
+      {entity.first_seen && <span>{s.detail.trackedSince} {entity.first_seen}</span>}
+      {lastUpdated && <span>{s.detail.updated} {lastUpdated}</span>}
+      {entity.url && <a href={entity.url} target="_blank" rel="noopener">{s.detail.viewSource}</a>}
+    </p>
+    {entity.rank && (
+      <p class="rank-line">{s.detail.rankLine(entity.rank, entity.kindTotal, primaryLabel, kindLabel)}</p>
+    )}
+  </header>
+
+  {primaryLabel && (
+    <div class="hero-stat">
+      <div class="hs-num">
+        <b title={full(primaryVal)}>{compact(primaryVal)}</b>
+        <span>{primaryLabel}</span>
+      </div>
+      <div class="hs-spark">
+        <Sparkline points={entity.spark} w={220} h={56} />
+        {!hasTrend && <p class="accruing">{s.detail.accruing}</p>}
+      </div>
+    </div>
+  )}
+
+  <p class="whatis">{s.detail.whatIs(entity.name, kindLabel)}</p>
+
+  {showKeys.length > 0 && (
+    <section class="detail-metrics">
+      <h2>{s.detail.latestMetrics}</h2>
+      <table>
+        <tbody>
+          {showKeys.map((m) => (
+            <tr>
+              <th>{ml[m] ?? m}</th>
+              <td title={full(entity.metrics[m].value)}>{compact(entity.metrics[m].value)}</td>
+              <td class="asof">{entity.metrics[m].captured_at}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  )}
+
+  <footer class="detail-foot"><a href={`${base}/`}>{s.detail.backHome}</a></footer>
+</article>

@@ -147,3 +147,57 @@ footer.site { margin-top: 3.5rem; padding-top: 1.25rem; border-top: 1px solid va
 footer.site a { color: var(--accent); }
 
 .table-scroll { overflow-x: auto; }
+
+.rank-more { margin: 0.75rem 0 0; font-size: 0.9rem; }
+.rank-more a, .browse-cta a { color: var(--accent); text-decoration: none; }
+.rank-more a:hover, .browse-cta a:hover { text-decoration: underline; }
+.browse-cta { margin: 2.5rem 0 0; font-size: 0.95rem; }
+
+/* ── 逐项目详情页 ── */
+.detail .crumb { margin: 0 0 1.5rem; font-size: 0.9rem; }
+.detail .crumb a { color: var(--accent); text-decoration: none; }
+.detail .crumb a:hover { text-decoration: underline; }
+.detail-head { border-bottom: 1px solid var(--border); padding-bottom: 1.25rem; }
+.kind-badge {
+  display: inline-block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--bg)); border-radius: 999px; padding: 0.2rem 0.6rem;
+}
+.detail-head h1 { font-size: 1.8rem; margin: 0.7rem 0 0.5rem; word-break: break-word; }
+.detail-meta { display: flex; flex-wrap: wrap; gap: 0.35rem 1rem; color: var(--fg-soft); font-size: 0.88rem; margin: 0; }
+.detail-meta a { color: var(--accent); text-decoration: none; }
+.detail-meta a:hover { text-decoration: underline; }
+.rank-line { margin: 0.8rem 0 0; color: var(--fg-soft); font-size: 0.9rem; }
+
+.hero-stat {
+  display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap;
+  margin: 1.75rem 0; padding: 1.25rem 1.4rem; border: 1px solid var(--border); border-radius: var(--radius);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, var(--bg)), var(--bg));
+}
+.hs-num b { display: block; font-size: 2.6rem; line-height: 1; color: var(--accent); font-variant-numeric: tabular-nums; }
+.hs-num span { display: block; margin-top: 0.35rem; color: var(--fg-soft); font-size: 0.9rem; }
+.hs-spark { text-align: right; }
+.hs-spark .accruing { margin: 0.3rem 0 0; color: var(--fg-soft); font-size: 0.8rem; }
+
+.whatis { color: var(--fg); max-width: 66ch; margin: 1.5rem 0; line-height: 1.65; }
+
+.detail-metrics { margin-top: 1.5rem; }
+.detail-metrics h2 { font-size: 1.05rem; margin: 0 0 0.6rem; }
+.detail-metrics table { width: auto; min-width: min(420px, 100%); }
+.detail-metrics th { text-align: left; color: var(--fg-soft); font-weight: 500; text-transform: none; letter-spacing: 0; font-size: 0.9rem; }
+.detail-metrics td { font-variant-numeric: tabular-nums; }
+.detail-metrics td.asof { color: var(--fg-soft); font-size: 0.82rem; }
+.detail-foot { margin-top: 2.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border); font-size: 0.9rem; }
+.detail-foot a { color: var(--accent); text-decoration: none; }
+.detail-foot a:hover { text-decoration: underline; }
+
+/* ── 目录 / browse ── */
+.browse-group { margin-top: 2.25rem; }
+.browse-group h2 { font-size: 1.1rem; margin: 0 0 0.75rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+.browse-group h2 .cnt { color: var(--fg-soft); font-size: 0.85rem; font-weight: 500; margin-left: 0.4rem; }
+.browse-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.15rem 1.25rem; }
+.browse-list li { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; padding: 0.32rem 0.4rem; border-radius: 6px; }
+.browse-list li:hover { background: var(--bg-soft); }
+.browse-list a { color: var(--fg); text-decoration: none; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.browse-list a:hover { color: var(--accent); }
+.browse-list .v { color: var(--fg-soft); font-size: 0.85rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }

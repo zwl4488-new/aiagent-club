@@ -1,10 +1,11 @@
 ---
 import { compact, full } from '../lib/format.mjs'
 // props: title, note, overhyped [{name,gh,stars,downloads}], underrated [...], strings
-const { title, note, overhyped = [], underrated = [], overLabel, underLabel, starsShort, dlMo } = Astro.props
+const { title, note, overhyped = [], underrated = [], overLabel, underLabel, starsShort, dlMo, base = '' } = Astro.props
 
+// 项目的 gh 仓即被追踪实体 github:<gh> → 链到其详情页(内链)。
 function row(r) {
-  return { ...r, ghUrl: `https://github.com/${r.gh}` }
+  return { ...r, ghUrl: `${base}/p/github/${r.gh}` }
 }
 ---
 <section class="hype">
@@ -18,7 +19,7 @@ function row(r) {
       <ol>
         {overhyped.map(row).map((r) => (
           <li>
-            <a class="name" href={r.ghUrl} target="_blank" rel="noopener">{r.name}</a>
+            <a class="name" href={r.ghUrl}>{r.name}</a>
             <span class="nums">
               <span class="stars" title={`${full(r.stars)} ${starsShort}`}>{compact(r.stars)} <em>{starsShort}</em></span>
               <span class="vs">·</span>
@@ -33,7 +34,7 @@ function row(r) {
       <ol>
         {underrated.map(row).map((r) => (
           <li>
-            <a class="name" href={r.ghUrl} target="_blank" rel="noopener">{r.name}</a>
+            <a class="name" href={r.ghUrl}>{r.name}</a>
             <span class="nums">
               <span class="stars low" title={`${full(r.stars)} ${starsShort}`}>{compact(r.stars)} <em>{starsShort}</em></span>
               <span class="vs">·</span>

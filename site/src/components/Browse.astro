@@ -1,0 +1,56 @@
+---
+import Base from '../layouts/Base.astro'
+import { buildEntityPages, PRIMARY } from '../lib/detail.mjs'
+import { t } from '../lib/i18n.mjs'
+import { compact } from '../lib/format.mjs'
+
+// props: locale
+const { locale = 'en' } = Astro.props
+const s = t(locale)
+const base = locale === 'zh' ? '/zh' : ''
+const path = locale === 'zh' ? '/zh/browse' : '/browse'
+const otherPath = locale === 'zh' ? '/browse' : '/zh/browse'
+
+const pages = await buildEntityPages()
+
+// 按 kind 分组、组内按主指标排名。展示顺序固定。
+const ORDER = ['github', 'npm', 'pypi', 'openrouter', 'modelscope', 'vscode']
+const groups = ORDER.map((kind) => {
+  const items = pages
+    .filter((p) => p.kind === kind)
+    .sort((a, b) => (a.rank ?? 1e9) - (b.rank ?? 1e9))
+  return { kind, items }
+}).filter((g) => g.items.length > 0)
+
+const title = `${s.browseTitle} | aiagent.club`
+---
+<Base locale={locale} title={title} description={s.browseIntro} path={path} altEn={locale === 'zh' ? otherPath : path} altZh={locale === 'zh' ? path : otherPath}>
+  <header class="site">
+    <div>
+      <h1><a href={`${base}/`} style="text-decoration:none;color:inherit">aiagent<span class="dot">.</span>club</a></h1>
+      <p class="tagline">{s.browseTitle}</p>
+    </div>
+    <div class="controls">
+      <a class="langlink" href={otherPath} data-astro-prefetch="hover">{s.switchLang}</a>
+    </div>
+  </header>
+
+  <p class="intro">{s.browseIntro}</p>
+
+  {groups.map((g) => (
+    <section class="browse-group">
+      <h2>{s.kindLabel[g.kind] ?? g.kind} <span class="cnt">{g.items.length}</span></h2>
+      <ul class="browse-list">
+        {g.items.map((p) => (
+          <li>
+            <a href={`${base}/p/${p.slug}`}>{p.name}</a>
+            <span class="v">{compact(p.primaryValue)}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+
+  <p class="browse-cta"><a href={`${base}/`}>{s.detail.backHome}</a></p>
+  <footer class="site">{s.footer}</footer>
+</Base>

@@ -3,10 +3,14 @@ import Sparkline from './Sparkline.astro'
 import { compact, full } from '../lib/format.mjs'
 // props:
 //  title, note
-//  rows: [{ name, url, values:{}, spark:[{captured_at,value}] }]
+//  rows: [{ entity_id, name, url, values:{}, spark:[{captured_at,value}] }]
 //  columns: [{ key, label, primary? }]
 //  trendLabel: string
-const { title, note, rows = [], columns = [], trendLabel } = Astro.props
+//  base: '' | '/zh'(内链前缀)
+//  more: { href, label }(可选,表尾"查看全部"链接)
+const { title, note, rows = [], columns = [], trendLabel, base = '', more = null } = Astro.props
+// entity_id 'github:owner/name' → 详情页路径 '/p/github/owner/name'(替换首个 ':')。
+const detailHref = (entityId) => `${base}/p/${entityId.replace(':', '/')}`
 ---
 <section class="rank">
   <h2>{title}</h2>
@@ -25,7 +29,7 @@ const { title, note, rows = [], columns = [], trendLabel } = Astro.props
         {rows.map((row, i) => (
           <tr>
             <td><span class="idx">{i + 1}</span></td>
-            <td><a class="name" href={row.url} target="_blank" rel="noopener">{row.name}</a></td>
+            <td><a class="name" href={detailHref(row.entity_id)}>{row.name}</a></td>
             {columns.map((c) => (
               <td class={c.primary ? 'primary' : ''} title={full(row.values[c.key])}>{compact(row.values[c.key])}</td>
             ))}
@@ -35,4 +39,5 @@ const { title, note, rows = [], columns = [], trendLabel } = Astro.props
       </tbody>
     </table>
   </div>
+  {more && <p class="rank-more"><a href={more.href}>{more.label}</a></p>}
 </section>
