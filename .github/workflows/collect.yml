@@ -6,6 +6,7 @@
 #
 # 需要的 Actions secrets(仓库 Settings → Secrets and variables → Actions):
 #   R2_ACCOUNT_ID  R2_ACCESS_KEY_ID  R2_SECRET_ACCESS_KEY  R2_BUCKET  S3_API_ENDPOINT
+#   OPENROUTER_API_KEY —— OpenRouter 用量榜(or_tokens_day)需要;不加则只采公开定价、跳过用量。
 # GITHUB_TOKEN 用 Actions 自带的(读 public repo 的 GraphQL,额度足够),无需手动加。
 
 name: collect
@@ -38,6 +39,8 @@ jobs:
       R2_BUCKET: ${{ secrets.R2_BUCKET }}
       S3_API_ENDPOINT: ${{ secrets.S3_API_ENDPOINT }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # OpenRouter 用量榜(or_tokens_day,真实 token 吞吐)需要 key;不映射进来 run.mjs 就看不到 → 跳过用量。
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
     steps:
       - uses: actions/checkout@v5
 
