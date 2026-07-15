@@ -22,6 +22,7 @@ import { collectOpenRouterModels, collectOpenRouterUsage } from './fetch/openrou
 import { collectModelScope } from './fetch/modelscope.mjs'
 import { collectVscode } from './fetch/vscode.mjs'
 import { GITHUB_REPOS, NPM_PACKAGES, PYPI_PACKAGES, MODELSCOPE_MODELS, VSCODE_EXTENSIONS } from './entities.mjs'
+import { pruneAndDedup } from './prune.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -174,6 +175,15 @@ async function main() {
 
   const written = await writer.flush()
   log(`run done: flushed ${written} statements`)
+
+  // 采集落盘后做数据清洗:GitHub 重定向去重(并历史)+ EXCLUDE 排除。声明式幂等,失败不影响已采数据。
+  try {
+    const { merged, excluded } = await pruneAndDedup(dbPath, log)
+    if (merged || excluded) log(`prune: 合并 ${merged} 别名、排除 ${excluded} 实体`)
+  } catch (e) {
+    log(`prune 跳过:${e instanceof Error ? e.message : e}`)
+  }
+
   // 非零退出让 CI 显示红,但数据(含部分成功)已落盘。
   process.exit(hadError ? 1 : 0)
 }

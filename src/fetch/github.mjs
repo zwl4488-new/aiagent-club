@@ -173,7 +173,12 @@ export async function collectGithub({ repos, token, capturedAt, writer, log = ()
     const { results, missing, rateLimit } = await fetchRepoBatch(batches[b], token)
     missingAll.push(...missing)
     for (const { repo, metrics, meta } of results) {
-      const entity_id = `${SOURCE}:${repo}`
+      // 用 GraphQL 解析出的 nameWithOwner(而非请求时的 owner/name)作 entity_id:
+      // repo 换 org / 改名会重定向,GraphQL 把旧 owner/name 解析成新的 nameWithOwner。
+      // 以解析名为准,重定向自然收敛到规范身份,不再为同一个仓库产生"旧名/新名"两条重复实体。
+      // (存量的旧别名实体由 src/prune.mjs 合并历史后清理。)
+      const canonical = meta.name || repo
+      const entity_id = `${SOURCE}:${canonical}`
       writer.upsertEntity({
         entity_id,
         kind: 'github',

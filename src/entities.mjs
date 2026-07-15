@@ -243,9 +243,29 @@ function mergeUnique(seed, extra) {
 
 const _disc = loadDiscovered()
 
-/** @type {string[]} 采集目标 = 种子 ∪ 自动发现。 */
-export const GITHUB_REPOS = mergeUnique(SEED_GITHUB_REPOS, _disc.github.map((d) => d.repo))
+/**
+ * 手工排除名单(数据清洗)。key = entity_id('<kind>:<identifier>')。
+ * 两处用途:① 从采集目标里剔除,不再抓;② src/prune.mjs 据此删掉存量实体+指标。
+ * 只放"确证的噪声 / 重复身份",宁缺毋滥——误杀会删掉真实项目历史。
+ * 说明:GitHub 换 org/改名产生的重定向重复由 collectGithub 按 nameWithOwner 收敛 + prune 自动处理,
+ * 不必列在这里;这里只列跨包生态无法自动识别的那类(如 PyPI 废弃别名、明显跑题的通用包)。
+ */
+export const EXCLUDE = new Set([
+  // —— 跑题噪声(非 agent 生态,发现关键词误收) ——
+  'npm:chat', // 通用聊天占位包,与 AI agent 无关
+  'npm:mockserver-client', // 测试用 mock server 客户端
+  // —— 重复身份(同一项目的废弃/别名包) ——
+  'pypi:pyautogen', // AutoGen 的旧名,现为 autogen-agentchat(保留后者)
+])
+
+/** 从合并集里剔除 EXCLUDE(按 '<kind>:<id>' 匹配)。 */
+function withoutExcluded(kind, ids) {
+  return ids.filter((id) => !EXCLUDE.has(`${kind}:${id}`))
+}
+
+/** @type {string[]} 采集目标 = (种子 ∪ 自动发现) − 排除名单。 */
+export const GITHUB_REPOS = withoutExcluded('github', mergeUnique(SEED_GITHUB_REPOS, _disc.github.map((d) => d.repo)))
 /** @type {string[]} */
-export const NPM_PACKAGES = mergeUnique(SEED_NPM_PACKAGES, _disc.npm.map((d) => d.name))
+export const NPM_PACKAGES = withoutExcluded('npm', mergeUnique(SEED_NPM_PACKAGES, _disc.npm.map((d) => d.name)))
 /** @type {string[]} */
-export const PYPI_PACKAGES = mergeUnique(SEED_PYPI_PACKAGES, _disc.pypi.map((d) => d.name))
+export const PYPI_PACKAGES = withoutExcluded('pypi', mergeUnique(SEED_PYPI_PACKAGES, _disc.pypi.map((d) => d.name)))
