@@ -22,6 +22,7 @@ export const KINDS = /** @type {const} */ ([
   'pypi',
   'hf', // Hugging Face
   'openrouter',
+  'vscode', // VS Code Marketplace 安装量(编码 agent)
   'mcp',
   // ── cn(国内源)──
   'modelscope', // 魔搭:国内模型下载量
@@ -37,7 +38,7 @@ export const KINDS = /** @type {const} */ ([
 ])
 
 const KIND_SET = new Set(KINDS)
-const GLOBAL_KINDS = new Set(['github', 'npm', 'pypi', 'hf', 'openrouter', 'mcp'])
+const GLOBAL_KINDS = new Set(['github', 'npm', 'pypi', 'hf', 'openrouter', 'vscode', 'mcp'])
 const CN_KINDS = new Set(['modelscope', 'gitee', 'coze', 'tongyi', 'wenxin', 'zhipu', 'minimax', 'baichuan'])
 
 /**

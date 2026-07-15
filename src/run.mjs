@@ -20,7 +20,8 @@ import { collectNpm } from './fetch/npm.mjs'
 import { collectPypi } from './fetch/pypi.mjs'
 import { collectOpenRouterModels, collectOpenRouterUsage } from './fetch/openrouter.mjs'
 import { collectModelScope } from './fetch/modelscope.mjs'
-import { GITHUB_REPOS, NPM_PACKAGES, PYPI_PACKAGES, MODELSCOPE_MODELS } from './entities.mjs'
+import { collectVscode } from './fetch/vscode.mjs'
+import { GITHUB_REPOS, NPM_PACKAGES, PYPI_PACKAGES, MODELSCOPE_MODELS, VSCODE_EXTENSIONS } from './entities.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -94,6 +95,12 @@ const SOURCES = {
   async modelscope({ writer, capturedAt, log }) {
     // 国内模型下载量,公开无需 key。
     const { metricsWritten, missing } = await collectModelScope({ models: MODELSCOPE_MODELS, capturedAt, writer, log })
+    return { metricsWritten, missing }
+  },
+
+  async vscode({ writer, capturedAt, log }) {
+    // VS Code Marketplace 安装量,公开无需 key。
+    const { metricsWritten, missing } = await collectVscode({ extensions: VSCODE_EXTENSIONS, capturedAt, writer, log })
     return { metricsWritten, missing }
   },
 }

@@ -184,3 +184,23 @@ export const MODELSCOPE_MODELS = [
   'OpenBMB/MiniCPM-V-2_6',
   'LLM-Research/Meta-Llama-3.1-8B-Instruct',
 ]
+
+// VS Code Marketplace 扩展(编码 agent/助手,安装量)。publisher.extension。含国产(灵码/CodeGeeX)。
+/** @type {string[]} */
+export const VSCODE_EXTENSIONS = [
+  'saoudrizwan.claude-dev', // Cline
+  'Continue.continue',
+  'RooVeterinaryInc.roo-cline', // Roo Code
+  'kilocode.kilo-code', // Kilo Code
+  'Codeium.codeium',
+  'sourcegraph.cody-ai',
+  'github.copilot',
+  'github.copilot-chat',
+  'TabNine.tabnine-vscode',
+  'AmazonWebServices.amazon-q-vscode',
+  'google.geminicodeassist',
+  'augment.vscode-augment',
+  'anthropic.claude-code',
+  'aminer.codegeex', // CodeGeeX(智谱)
+  'Alibaba-Cloud.tongyi-lingma', // 通义灵码
+]
