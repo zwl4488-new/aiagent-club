@@ -19,7 +19,8 @@ import { collectGithub } from './fetch/github.mjs'
 import { collectNpm } from './fetch/npm.mjs'
 import { collectPypi } from './fetch/pypi.mjs'
 import { collectOpenRouterModels, collectOpenRouterUsage } from './fetch/openrouter.mjs'
-import { GITHUB_REPOS, NPM_PACKAGES, PYPI_PACKAGES } from './entities.mjs'
+import { collectModelScope } from './fetch/modelscope.mjs'
+import { GITHUB_REPOS, NPM_PACKAGES, PYPI_PACKAGES, MODELSCOPE_MODELS } from './entities.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -88,6 +89,12 @@ const SOURCES = {
       log('openrouter usage:无 OPENROUTER_API_KEY,跳过用量排行')
     }
     return { metricsWritten, missing: [] }
+  },
+
+  async modelscope({ writer, capturedAt, log }) {
+    // 国内模型下载量,公开无需 key。
+    const { metricsWritten, missing } = await collectModelScope({ models: MODELSCOPE_MODELS, capturedAt, writer, log })
+    return { metricsWritten, missing }
   },
 }
 

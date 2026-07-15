@@ -23,7 +23,9 @@ export const KINDS = /** @type {const} */ ([
   'hf', // Hugging Face
   'openrouter',
   'mcp',
-  // ── cn(国内 FC 抓)──
+  // ── cn(国内源)──
+  'modelscope', // 魔搭:国内模型下载量
+  'gitee',
   'coze',
   'tongyi',
   'wenxin',
@@ -36,7 +38,7 @@ export const KINDS = /** @type {const} */ ([
 
 const KIND_SET = new Set(KINDS)
 const GLOBAL_KINDS = new Set(['github', 'npm', 'pypi', 'hf', 'openrouter', 'mcp'])
-const CN_KINDS = new Set(['coze', 'tongyi', 'wenxin', 'zhipu', 'minimax', 'baichuan'])
+const CN_KINDS = new Set(['modelscope', 'gitee', 'coze', 'tongyi', 'wenxin', 'zhipu', 'minimax', 'baichuan'])
 
 /**
  * kind → 默认 ecosystem;返回 null 表示无法从 kind 推断(如 pricing),必须显式指定。

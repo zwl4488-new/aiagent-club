@@ -162,3 +162,25 @@ export const PYPI_PACKAGES = [
   'chromadb',
   'qdrant-client',
 ]
+
+// 魔搭 ModelScope 模型(国内真实下载量,kind=modelscope,ecosystem=cn)。全部实测有效。
+// 精选主流国产 LLM(agent 相关);发现式扩容(dolphin 端点)留后续。
+/** @type {string[]} */
+export const MODELSCOPE_MODELS = [
+  'Qwen/Qwen2.5-7B-Instruct',
+  'Qwen/Qwen2.5-72B-Instruct',
+  'Qwen/Qwen3-8B',
+  'Qwen/Qwen3-235B-A22B',
+  'deepseek-ai/DeepSeek-V3',
+  'deepseek-ai/DeepSeek-R1',
+  'deepseek-ai/DeepSeek-V3.1',
+  'ZhipuAI/glm-4-9b-chat',
+  'ZhipuAI/GLM-4.5',
+  'ZhipuAI/GLM-4.6',
+  '01ai/Yi-1.5-9B-Chat',
+  'baichuan-inc/Baichuan2-13B-Chat',
+  'Shanghai_AI_Laboratory/internlm2_5-7b-chat',
+  'moonshotai/Kimi-K2-Instruct',
+  'OpenBMB/MiniCPM-V-2_6',
+  'LLM-Research/Meta-Llama-3.1-8B-Instruct',
+]
