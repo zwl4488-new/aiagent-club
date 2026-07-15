@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS entities (
   name        TEXT,
   url         TEXT,
   category    TEXT,
+  description TEXT,                           -- 项目一句话简介(github GraphQL / npm / pypi 取,详情页展示)
   lang        TEXT CHECK (lang IN ('en','zh') OR lang IS NULL),
   first_seen  TEXT,                          -- ISO date 'YYYY-MM-DD'
   last_seen   TEXT,

@@ -29,7 +29,7 @@ test('writer round-trips entity + metric to a real db (idempotent)', async () =>
   // 建最小 schema
   await runSqlite(
     dbPath,
-    `CREATE TABLE entities (entity_id TEXT PRIMARY KEY, kind TEXT, ecosystem TEXT, name TEXT, url TEXT, category TEXT, lang TEXT, first_seen TEXT, last_seen TEXT, active INTEGER DEFAULT 1);
+    `CREATE TABLE entities (entity_id TEXT PRIMARY KEY, kind TEXT, ecosystem TEXT, name TEXT, url TEXT, category TEXT, description TEXT, lang TEXT, first_seen TEXT, last_seen TEXT, active INTEGER DEFAULT 1);
      CREATE TABLE metrics (entity_id TEXT, metric TEXT, value REAL, captured_at TEXT, source TEXT, UNIQUE(entity_id,metric,captured_at) ON CONFLICT REPLACE);`
   )
   const w = createWriter(dbPath)
@@ -49,5 +49,37 @@ test('writer round-trips entity + metric to a real db (idempotent)', async () =>
 
   const ents = await query(dbPath, `SELECT name FROM entities WHERE entity_id='github:a/b'`)
   assert.equal(ents[0].name, "a/b O'x") // 引号正确落库
+  await unlink(dbPath).catch(() => {})
+})
+
+test('description: 采到即写,采不到(undefined)走 COALESCE 保留旧值', async () => {
+  const dbPath = '/tmp/aiagent-club-desc-test.db'
+  await unlink(dbPath).catch(() => {})
+  await runSqlite(
+    dbPath,
+    `CREATE TABLE entities (entity_id TEXT PRIMARY KEY, kind TEXT, ecosystem TEXT, name TEXT, url TEXT, category TEXT, description TEXT, lang TEXT, first_seen TEXT, last_seen TEXT, active INTEGER DEFAULT 1);`
+  )
+  const base = { entity_id: 'npm:x', kind: 'npm', ecosystem: 'global', name: 'x', last_seen: '2026-07-16' }
+
+  // 首采:带简介 → 落库。
+  const w1 = createWriter(dbPath)
+  w1.upsertEntity({ ...base, description: 'a cool package' })
+  await w1.flush()
+  let r = await query(dbPath, `SELECT description FROM entities WHERE entity_id='npm:x'`)
+  assert.equal(r[0].description, 'a cool package')
+
+  // 次采:这次没取到简介(undefined) → COALESCE 保留旧简介,不被抹成 NULL。
+  const w2 = createWriter(dbPath)
+  w2.upsertEntity({ ...base, description: undefined })
+  await w2.flush()
+  r = await query(dbPath, `SELECT description FROM entities WHERE entity_id='npm:x'`)
+  assert.equal(r[0].description, 'a cool package')
+
+  // 再采:取到新简介 → 刷新。
+  const w3 = createWriter(dbPath)
+  w3.upsertEntity({ ...base, description: 'updated summary' })
+  await w3.flush()
+  r = await query(dbPath, `SELECT description FROM entities WHERE entity_id='npm:x'`)
+  assert.equal(r[0].description, 'updated summary')
   await unlink(dbPath).catch(() => {})
 })

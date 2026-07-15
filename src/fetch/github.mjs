@@ -57,6 +57,7 @@ export function chunk(arr, size) {
 const REPO_FIELDS = `
   nameWithOwner
   url
+  description
   isArchived
   stargazerCount
   forkCount
@@ -96,7 +97,7 @@ export function buildBatchQuery(repos) {
 /**
  * 把单个 repo 的 GraphQL 节点摊平成 { metrics, meta }。
  * @param {any} node
- * @returns {{ metrics: Record<string, number>, meta: { name: string, url: string, category: string|null, createdAt: string|null, archived: boolean } }}
+ * @returns {{ metrics: Record<string, number>, meta: { name: string, url: string, category: string|null, description: string|null, createdAt: string|null, archived: boolean } }}
  */
 export function parseRepoNode(node) {
   const commits = node.defaultBranchRef?.target?.history?.totalCount
@@ -119,6 +120,7 @@ export function parseRepoNode(node) {
       name: node.nameWithOwner,
       url: node.url,
       category: node.primaryLanguage?.name ?? null,
+      description: node.description?.trim() || null,
       createdAt: node.createdAt ? node.createdAt.slice(0, 10) : null,
       archived: Boolean(node.isArchived),
     },
@@ -179,6 +181,7 @@ export async function collectGithub({ repos, token, capturedAt, writer, log = ()
         name: meta.name,
         url: meta.url,
         category: meta.category ?? undefined,
+        description: meta.description ?? undefined,
         first_seen: meta.createdAt ?? undefined,
         last_seen: capturedAt,
         active: meta.archived ? 0 : 1,

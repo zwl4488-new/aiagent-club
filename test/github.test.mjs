@@ -33,6 +33,7 @@ test('parseRepoNode flattens metrics and meta', () => {
     pullRequests: { totalCount: 3 },
     releases: { totalCount: 7 },
     createdAt: '2020-01-02T03:04:05Z',
+    description: '  A test repo.  ',
     primaryLanguage: { name: 'Python' },
     defaultBranchRef: { target: { history: { totalCount: 999 } } },
   }
@@ -40,6 +41,7 @@ test('parseRepoNode flattens metrics and meta', () => {
   assert.deepEqual(metrics, { stars: 100, forks: 20, watchers: 30, open_issues: 5, open_prs: 3, releases: 7, commits: 999 })
   assert.equal(meta.name, 'a/b')
   assert.equal(meta.category, 'Python')
+  assert.equal(meta.description, 'A test repo.') // trim,空白/缺失 → null
   assert.equal(meta.createdAt, '2020-01-02')
   assert.equal(meta.archived, false)
 })

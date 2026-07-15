@@ -42,6 +42,22 @@ function nowISO() {
 async function ensureSchema(dbPath) {
   const schema = await readFile(join(__dirname, '..', 'db', 'schema.sql'), 'utf8')
   await runSqlite(dbPath, schema)
+  // 迁移:CREATE TABLE IF NOT EXISTS 不会给已存在的表补列。R2 上的旧库建于加 description 之前,
+  // 故显式补列(SQLite 无 ADD COLUMN IF NOT EXISTS,先查 pragma 再决定,避免"duplicate column"报错)。
+  await addColumnIfMissing(dbPath, 'entities', 'description', 'TEXT')
+}
+
+/**
+ * 幂等给表补列:列已存在则跳过,否则 ALTER TABLE ADD COLUMN。
+ * @param {string} dbPath
+ * @param {string} table
+ * @param {string} column
+ * @param {string} type
+ */
+async function addColumnIfMissing(dbPath, table, column, type) {
+  const cols = /** @type {any[]} */ (await runSqlite(dbPath, `PRAGMA table_info(${table});`, { json: true }))
+  if (cols.some((c) => c.name === column)) return
+  await runSqlite(dbPath, `ALTER TABLE ${table} ADD COLUMN ${column} ${type};`)
 }
 
 /**

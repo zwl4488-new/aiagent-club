@@ -59,6 +59,7 @@ export async function buildEntityPages() {
       name: e.name,
       url: e.url,
       category: e.category ?? null,
+      description: e.description ?? null,
       first_seen: e.first_seen ?? null,
       id: idPart(e.entity_id),
       slug: `${e.kind}/${idPart(e.entity_id)}`,

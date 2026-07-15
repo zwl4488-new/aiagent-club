@@ -17,7 +17,9 @@ const kindLabel = s.kindLabel[entity.kind] ?? entity.kind
 const stat =
   entity.primaryValue != null ? `${compact(entity.primaryValue)} ${s.metricLabel[entity.primaryMetric] ?? ''}。` : ''
 const title = `${entity.name} — ${kindLabel} | aiagent.club`
-const description = s.detail.metaDesc(entity.name, kindLabel, stat)
+const description = entity.description
+  ? s.detail.metaDescReal(entity.name, entity.description, stat)
+  : s.detail.metaDesc(entity.name, kindLabel, stat)
 ---
 <Base locale="zh" title={title} description={description} path={path} altEn={`/p/${entity.slug}`} altZh={path}>
   <EntityDetail entity={entity} s={s} base="/zh" />

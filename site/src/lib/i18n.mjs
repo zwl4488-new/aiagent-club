@@ -85,6 +85,8 @@ export const STRINGS = {
       rankLine: (rank, total, metric, kind) => `#${rank} of ${total} by ${metric} among ${kind}s`,
       metaDesc: (name, kind, stat) =>
         `${name} — ${stat} Tracked daily by aiagent.club: stars, downloads, and real usage over time for the AI agent ecosystem.`,
+      // 有真实简介时,meta 描述以它开头(更贴题、对搜索更友好),再补统计与追踪说明。
+      metaDescReal: (name, desc, stat) => `${name}: ${desc} — ${stat} Tracked daily by aiagent.club.`,
       whatIs: (name, kind) =>
         `${name} is a ${kind} tracked by aiagent.club, a daily time-series instrument for the AI agent ecosystem. Below are its latest metrics and how they change over time — attention (stars) alongside the harder-to-fake signals of real usage.`,
     },
@@ -173,6 +175,8 @@ export const STRINGS = {
       rankLine: (rank, total, metric, kind) => `${kind} 中按${metric}排名第 ${rank} / 共 ${total}`,
       metaDesc: (name, kind, stat) =>
         `${name} —— ${stat} aiagent.club 每日追踪:star、下载量与真实使用量随时间的变化,专注 AI agent 生态。`,
+      // 有真实简介时,meta 描述以它开头(简介为源语言,不翻译),再补统计与追踪说明。
+      metaDescReal: (name, desc, stat) => `${name}:${desc} —— ${stat} aiagent.club 每日追踪。`,
       whatIs: (name, kind) =>
         `${name} 是 aiagent.club 追踪的一个${kind}。aiagent.club 是面向 AI agent 生态的每日时序数据仪器。下面是它的最新指标及其随时间的变化 —— 关注度(star)与更难造假的真实使用信号并列呈现。`,
     },

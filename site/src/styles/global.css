@@ -179,7 +179,8 @@ footer.site a { color: var(--accent); }
 .hs-spark { text-align: right; }
 .hs-spark .accruing { margin: 0.3rem 0 0; color: var(--fg-soft); font-size: 0.8rem; }
 
-.whatis { color: var(--fg); max-width: 66ch; margin: 1.5rem 0; line-height: 1.65; }
+.lead { color: var(--fg); max-width: 66ch; margin: 1.5rem 0 0.6rem; font-size: 1.12rem; line-height: 1.55; font-weight: 500; }
+.whatis { color: var(--fg-soft); max-width: 66ch; margin: 0.6rem 0 0; line-height: 1.65; font-size: 0.95rem; }
 
 .detail-metrics { margin-top: 1.5rem; }
 .detail-metrics h2 { font-size: 1.05rem; margin: 0 0 0.6rem; }

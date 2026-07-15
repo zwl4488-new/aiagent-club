@@ -141,9 +141,16 @@ export async function latestMap(metric) {
   return new Map(rows.map((r) => [r.entity_id, r.value]))
 }
 
+/** 某表是否有某列(构建期防御:旧 data.db 可能还没迁移出 description 列)。 */
+async function hasColumn(table, column) {
+  const cols = await query(`PRAGMA table_info(${table})`)
+  return cols.some((c) => c.name === column)
+}
+
 /** 全部实体(用于逐项目 SEO 详情页 getStaticPaths)。 */
 export async function allEntities() {
-  return query(`SELECT entity_id, kind, name, url, category, first_seen FROM entities ORDER BY kind, name`)
+  const desc = (await hasColumn('entities', 'description')) ? 'description' : `NULL AS description`
+  return query(`SELECT entity_id, kind, name, url, category, ${desc}, first_seen FROM entities ORDER BY kind, name`)
 }
 
 /**

@@ -46,6 +46,7 @@ const lastUpdated = entity.primaryMetric ? entity.metrics[entity.primaryMetric]?
     </div>
   )}
 
+  {entity.description && <p class="lead">{entity.description}</p>}
   <p class="whatis">{s.detail.whatIs(entity.name, kindLabel)}</p>
 
   {showKeys.length > 0 && (

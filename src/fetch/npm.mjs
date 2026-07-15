@@ -13,10 +13,49 @@ import { fetchRetry, sleep } from './client.mjs'
 
 export const SOURCE = 'npm'
 export const NPM_DOWNLOADS_API = 'https://api.npmjs.org/downloads/point'
+export const NPM_REGISTRY = 'https://registry.npmjs.org'
 const BULK_MAX = 100 // downloads point bulk 一次上限
 const SCOPED_GAP_MS = 250 // scoped 逐包间隔,温和使用公开 API
+const DESC_CONCURRENCY = 6 // registry 是 CDN,可小并发取简介
 // 采集里限速要 fail-fast:少重试短退避,持续 429 的包快速记 missing(下次补),不要 30s 卡死一个包。
 const DL_OPTS = { notFoundOk: true, retries: 3, baseDelayMs: 600, headers: { 'user-agent': 'aiagent-club' } }
+const DESC_OPTS = { notFoundOk: true, retries: 2, baseDelayMs: 400, headers: { 'user-agent': 'aiagent-club' } }
+
+/**
+ * 有界并发跑 worker(简单池);任一失败不影响其它。
+ * @template T
+ * @param {T[]} items
+ * @param {number} concurrency
+ * @param {(item: T) => Promise<void>} worker
+ */
+async function pool(items, concurrency, worker) {
+  let i = 0
+  const runners = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (i < items.length) {
+      const item = items[i++]
+      try {
+        await worker(item)
+      } catch {
+        /* 单项失败:忽略,不掀翻整池 */
+      }
+    }
+  })
+  await Promise.all(runners)
+}
+
+/**
+ * 取单包简介(latest 版本 manifest 的 description);取不到返回 null。
+ * /latest 只返回最新版清单(含 description),负载小,scoped 也支持。
+ * @param {string} pkg
+ * @returns {Promise<string|null>}
+ */
+export async function fetchNpmDescription(pkg) {
+  const res = await fetchRetry(`${NPM_REGISTRY}/${pkg}/latest`, DESC_OPTS)
+  if (res.status === 404) return null
+  const json = await res.json()
+  const d = typeof json?.description === 'string' ? json.description.trim() : ''
+  return d || null
+}
 
 /** 把数组切成定长块。 */
 function chunk(arr, n) {
@@ -75,6 +114,15 @@ export async function collectNpm({ packages, capturedAt, writer, log = () => {} 
   /** @type {string[]} */
   const missing = []
 
+  // 先取全部包简介(有界并发,容错):registry 与下载量 API 不同源,并发也不冲突。
+  // 取不到的包 desc 为 undefined,upsertEntity 走 COALESCE 保留已有简介,不抹旧值。
+  /** @type {Map<string, string>} */
+  const descs = new Map()
+  await pool(packages, DESC_CONCURRENCY, async (pkg) => {
+    const d = await fetchNpmDescription(pkg)
+    if (d) descs.set(pkg, d)
+  })
+
   const write = (pkg, downloads) => {
     const entity_id = `${SOURCE}:${pkg}`
     writer.upsertEntity({
@@ -83,6 +131,7 @@ export async function collectNpm({ packages, capturedAt, writer, log = () => {} 
       ecosystem: 'global',
       name: pkg,
       url: `https://www.npmjs.com/package/${pkg}`,
+      description: descs.get(pkg),
       last_seen: capturedAt,
       active: 1,
     })

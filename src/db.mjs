@@ -83,6 +83,7 @@ export async function query(dbPath, sql) {
  * @property {string} [name]
  * @property {string} [url]
  * @property {string} [category]
+ * @property {string} [description]
  * @property {'en'|'zh'} [lang]
  * @property {string} [first_seen]  ISO date
  * @property {string} [last_seen]   ISO date
@@ -120,16 +121,18 @@ export function createWriter(dbPath) {
   return {
     /** @param {EntityRow} e */
     upsertEntity(e) {
-      // 维度表用显式 upsert:name/url/category/lang 用 COALESCE 保留已有非空值,
+      // 维度表用显式 upsert:name/url/category/description/lang 用 COALESCE 保留已有非空值,
       // first_seen 取最早(保留旧值),last_seen 取最新。
+      // description 采到新值就刷新(excluded 优先),采不到(NULL)则保留旧简介——单次抓取失败绝不抹掉已有描述。
       stmts.push(
-        `INSERT INTO entities (entity_id,kind,ecosystem,name,url,category,lang,first_seen,last_seen,active) VALUES (` +
+        `INSERT INTO entities (entity_id,kind,ecosystem,name,url,category,description,lang,first_seen,last_seen,active) VALUES (` +
           `${sqlText(e.entity_id)},${sqlText(e.kind)},${sqlText(e.ecosystem)},${sqlText(e.name)},${sqlText(e.url)},` +
-          `${sqlText(e.category)},${sqlText(e.lang)},${sqlText(e.first_seen)},${sqlText(e.last_seen)},${sqlNum(e.active ?? 1)}) ` +
+          `${sqlText(e.category)},${sqlText(e.description)},${sqlText(e.lang)},${sqlText(e.first_seen)},${sqlText(e.last_seen)},${sqlNum(e.active ?? 1)}) ` +
           `ON CONFLICT(entity_id) DO UPDATE SET ` +
           `kind=excluded.kind, ecosystem=excluded.ecosystem, ` +
           `name=COALESCE(excluded.name,entities.name), url=COALESCE(excluded.url,entities.url), ` +
-          `category=COALESCE(excluded.category,entities.category), lang=COALESCE(excluded.lang,entities.lang), ` +
+          `category=COALESCE(excluded.category,entities.category), ` +
+          `description=COALESCE(excluded.description,entities.description), lang=COALESCE(excluded.lang,entities.lang), ` +
           `first_seen=COALESCE(entities.first_seen,excluded.first_seen), ` +
           `last_seen=COALESCE(excluded.last_seen,entities.last_seen), active=excluded.active;`
       )
