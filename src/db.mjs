@@ -57,6 +57,9 @@ export function runSqlite(dbPath, sql, { json = false } = {}) {
       const trimmed = out.trim()
       resolve(trimmed ? JSON.parse(trimmed) : [])
     })
+    // busy_timeout:并发写(如回填 + 采集同时跑)时等待而非立刻 SQLITE_BUSY 报错。
+    // 仅写模式加(json 读模式下该 PRAGMA 会污染 -json 输出;读在 WAL 下本就不阻塞)。
+    if (!json) p.stdin.write('PRAGMA busy_timeout=30000;\n')
     p.stdin.write(sql)
     p.stdin.end()
   })
