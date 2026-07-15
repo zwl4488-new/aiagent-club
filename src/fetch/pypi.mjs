@@ -8,8 +8,10 @@ import { fetchRetry, sleep } from './client.mjs'
 
 export const SOURCE = 'pypi'
 export const PYPISTATS_API = 'https://pypistats.org/api/packages'
-// 包间隔:pypistats 是志愿者服务,包多时连打会 429。逐包之间歇一下。
-const GAP_MS = 400
+// 包间隔:pypistats 是志愿者服务,包多时连打会 429。逐包之间歇一下(规模化后加大)。
+const GAP_MS = 600
+// 限速 fail-fast:少重试短退避,持续 429 的包快速记 missing(下次补),不 30s 卡死一个包。
+const RECENT_OPTS = { notFoundOk: true, retries: 3, baseDelayMs: 600, headers: { 'user-agent': 'aiagent-club' } }
 
 /**
  * 从 pypistats recent 响应摊平出三个窗口的下载指标。纯函数,便于测试。
@@ -32,10 +34,7 @@ export function parsePypiRecent(json) {
  * @returns {Promise<Record<string, number> | null>}
  */
 export async function fetchPypiRecent(pkg) {
-  const res = await fetchRetry(`${PYPISTATS_API}/${encodeURIComponent(pkg)}/recent`, {
-    notFoundOk: true,
-    headers: { 'user-agent': 'aiagent-club' },
-  })
+  const res = await fetchRetry(`${PYPISTATS_API}/${encodeURIComponent(pkg)}/recent`, RECENT_OPTS)
   if (res.status === 404) return null
   return parsePypiRecent(await res.json())
 }
@@ -59,7 +58,13 @@ export async function collectPypi({ packages, capturedAt, writer, log = () => {}
   for (const pkg of packages) {
     if (!first) await sleep(GAP_MS) // 温和使用 pypistats,避免 429
     first = false
-    const metrics = await fetchPypiRecent(pkg)
+    let metrics
+    try {
+      metrics = await fetchPypiRecent(pkg)
+    } catch (e) {
+      missing.push(pkg) // 持续 429/网络错:跳过,下次补,不掀翻整个源
+      continue
+    }
     if (!metrics || Object.keys(metrics).length === 0) {
       missing.push(pkg)
       continue
@@ -80,6 +85,6 @@ export async function collectPypi({ packages, capturedAt, writer, log = () => {}
       metricsWritten++
     }
   }
-  if (missing.length) log(`pypi missing packages (名字错/未发布?): ${missing.join(', ')}`)
+  if (missing.length) log(`pypi 未采到 ${missing.length} 包(不存在/限速跳过,下次补):${missing.slice(0, 20).join(', ')}${missing.length > 20 ? ' …' : ''}`)
   return { metricsWritten, entitiesSeen, missing }
 }
