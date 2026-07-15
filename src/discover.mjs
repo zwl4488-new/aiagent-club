@@ -10,16 +10,15 @@
 
 import { writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
-import { githubGraphQLRequest } from './fetch/github.mjs'
+import { githubGraphQLRequest, chunk } from './fetch/github.mjs'
 import { getJson, sleep } from './fetch/client.mjs'
-import { SEED_GITHUB_REPOS, SEED_NPM_PACKAGES } from './entities.mjs'
+import { SEED_GITHUB_REPOS, SEED_NPM_PACKAGES, SEED_PYPI_PACKAGES } from './entities.mjs'
 
 const OUT_PATH = fileURLToPath(new URL('./discovered.json', import.meta.url))
 
 // ── 门槛(保守,重质量;调这里控制扩容规模)──
 const GH_MIN_STARS = 300 // 低于此不收:agent 生态里 300 星以下噪声/半成品居多
 const GH_ALIVE_MONTHS = 12 // 最近一次 push 超过这么久 = 已死,不收
-const NPM_MIN_POPULARITY = 0.08 // npm search 的 popularity 分(0..1),太低多为个人玩具
 
 // 刷星识别(on-thesis:star 可刷)。真实巨星仓"自建仓至今的日均新增"约 200–250(open-webui 227、
 // firecrawl 207、gemini-cli ~230);刷星仓远超此值(ECC ~1280、ponytail ~2500、hermes ~600)。
@@ -46,10 +45,14 @@ const GH_QUERIES = [
   'topic:model-context-protocol',
 ]
 
-// npm 关键词发现:暂停。npm search 只给相关性分,不给下载量;关键词面(agents/mcp)噪声极高
-// (chat / agent-device / @chat-adapter/* 一类),缺下载量无法定质量门槛。留待"按周下载量过滤"的后续实现。
-const NPM_KEYWORDS = []
-const DISCOVER_NPM = false
+// npm 关键词面。search 只给相关性分(噪声高),故拿到候选名后再用真实"周下载量"过滤定质量。
+const NPM_KEYWORDS = ['ai-agent', 'llm-agent', 'agentic', 'autonomous-agent', 'mcp', 'model-context-protocol']
+const NPM_MIN_WEEKLY = 3000 // 周下载量门槛:刷不出来的真实使用量,低于此多为玩具/个人包
+const NPM_DL_API = 'https://api.npmjs.org/downloads/point/last-week'
+
+// PyPI 无公开搜索 API → 从已发现的 Python GitHub 仓推导候选包名(仓名规范化),再用 pypistats 月下载量验证+过滤。
+const PYPI_MIN_MONTHLY = 20000 // 月下载量门槛
+const PYPISTATS_API = 'https://pypistats.org/api/packages'
 
 // 去噪:名字/描述命中这些词多为教程/清单/课程,而非可追踪的工具/框架。
 const JUNK_RE =
@@ -172,19 +175,70 @@ async function npmSearch(keyword) {
   return json.objects ?? []
 }
 
-/** 收集 + 过滤 + 去重 npm 候选。 */
+/** 批量取非 scoped 包周下载量(bulk API,单次≤100);返回 name→weekly。 */
+async function npmWeeklyBulk(names, log) {
+  const out = new Map()
+  for (const grp of chunk(names, 100)) {
+    try {
+      const j = await getJson(`${NPM_DL_API}/${grp.join(',')}`, { headers: { 'user-agent': 'aiagent-club-discover' } })
+      // 单包时返回 {downloads,...};多包时返回 { name: {downloads,...} }。
+      if (grp.length === 1) {
+        if (typeof j?.downloads === 'number') out.set(grp[0], j.downloads)
+      } else {
+        for (const [k, v] of Object.entries(j)) if (v && typeof v.downloads === 'number') out.set(k, v.downloads)
+      }
+    } catch (e) {
+      log(`  [npm] 下载量批次失败(${grp.length} 包):${e instanceof Error ? e.message : e}`)
+    }
+    await sleep(250)
+  }
+  return out
+}
+
+/** scoped 包(@scope/name)只能逐个查周下载量。fail-fast(少重试短超时),不存在/失败返回 null。 */
+async function npmWeeklyOne(name) {
+  try {
+    const j = await getJson(`${NPM_DL_API}/${name}`, {
+      headers: { 'user-agent': 'aiagent-club-discover' },
+      notFoundOk: true,
+      retries: 1,
+      baseDelayMs: 300,
+      timeoutMs: 8000,
+    })
+    return typeof j?.downloads === 'number' ? j.downloads : null
+  } catch {
+    return null
+  }
+}
+
+/** 有界并发跑一批异步任务。npm/pypistats 的 CDN 扛得住小并发,把上百个逐个请求压成几秒。 */
+async function pool(items, concurrency, worker) {
+  const results = new Array(items.length)
+  let next = 0
+  async function run() {
+    while (next < items.length) {
+      const i = next++
+      results[i] = await worker(items[i], i)
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, run))
+  return results
+}
+
+/** 收集 npm 候选 → 按真实周下载量过滤。 */
 async function discoverNpm(log) {
   const seen = new Set(SEED_NPM_PACKAGES.map((p) => p.toLowerCase()))
-  /** @type {Map<string, any>} */
-  const found = new Map()
-  let dropped = { pop: 0, junk: 0, dup: 0 }
+  /** @type {Map<string, string>} */
+  const cand = new Map() // key: lower(name) → name(原样)
+  const desc = new Map()
+  let dropped = { junk: 0, dup: 0 }
 
   for (const kw of NPM_KEYWORDS) {
     let objs = []
     try {
       objs = await npmSearch(kw)
     } catch (e) {
-      log(`  [npm] 查询失败,跳过:${kw} — ${e instanceof Error ? e.message : e}`)
+      log(`  [npm] 搜索失败,跳过:${kw} — ${e instanceof Error ? e.message : e}`)
       continue
     }
     for (const o of objs) {
@@ -195,26 +249,95 @@ async function discoverNpm(log) {
         dropped.dup++
         continue
       }
-      const pop = o.score?.detail?.popularity ?? 0
-      if (pop < NPM_MIN_POPULARITY) {
-        dropped.pop++
-        continue
-      }
-      const text = `${name} ${o.package?.description ?? ''}`
-      if (JUNK_RE.test(text)) {
+      if (JUNK_RE.test(`${name} ${o.package?.description ?? ''}`)) {
         dropped.junk++
         continue
       }
-      if (!found.has(key)) {
-        found.set(key, { name, popularity: Number(pop.toFixed(3)), desc: (o.package?.description ?? '').slice(0, 200) })
+      if (!cand.has(key)) {
+        cand.set(key, name)
+        desc.set(key, (o.package?.description ?? '').slice(0, 200))
       }
     }
-    log(`  [npm] "${kw}" → ${objs.length} 命中,累计候选 ${found.size}`)
-    await sleep(400)
+    log(`  [npm] "${kw}" → ${objs.length} 命中,累计候选 ${cand.size}`)
+    await sleep(300)
   }
 
-  const list = [...found.values()].sort((a, b) => b.popularity - a.popularity)
-  log(`  [npm] 新候选 ${list.length}(去重跳过 ${dropped.dup},人气过低 ${dropped.pop},去噪 ${dropped.junk})`)
+  // 按真实周下载量过滤:非 scoped 走 bulk,scoped 逐个。
+  const names = [...cand.values()]
+  const scoped = names.filter((n) => n.startsWith('@'))
+  const plain = names.filter((n) => !n.startsWith('@'))
+  log(`  [npm] 候选 ${names.length}(scoped ${scoped.length}),取周下载量过滤(≥${NPM_MIN_WEEKLY})…`)
+
+  const weekly = await npmWeeklyBulk(plain, log)
+  // scoped 无 bulk → 有界并发(10 路)逐个查,几秒完成。
+  const scopedDl = await pool(scoped, 10, (s) => npmWeeklyOne(s))
+  scoped.forEach((s, i) => {
+    if (scopedDl[i] != null) weekly.set(s, scopedDl[i])
+  })
+
+  const list = []
+  for (const name of names) {
+    const w = weekly.get(name)
+    if (w != null && w >= NPM_MIN_WEEKLY) list.push({ name, weekly: w, desc: desc.get(name.toLowerCase()) ?? '' })
+  }
+  list.sort((a, b) => b.weekly - a.weekly)
+  log(`  [npm] 过关 ${list.length}(去重 ${dropped.dup},去噪 ${dropped.junk},下载量不足 ${names.length - list.length})`)
+  return list
+}
+
+/** pypistats recent:取月下载量;不存在/失败返回 null。发现是尽力而为,故 fail-fast(少重试、短超时),
+ *  避免个别 429/超时触发长退避把整轮拖死。 */
+async function pypiMonthly(pkg) {
+  try {
+    const res = await getJson(`${PYPISTATS_API}/${encodeURIComponent(pkg)}/recent`, {
+      headers: { 'user-agent': 'aiagent-club-discover' },
+      notFoundOk: true,
+      retries: 1,
+      baseDelayMs: 400,
+      timeoutMs: 8000,
+    })
+    const m = res?.data?.last_month
+    return typeof m === 'number' ? m : null
+  } catch {
+    return null
+  }
+}
+
+/** PyPI 规范化包名:小写,下划线→连字符(PEP 503)。 */
+function normalizePypi(name) {
+  return name.toLowerCase().replace(/[_.]+/g, '-')
+}
+
+/**
+ * PyPI 发现:从已发现的 Python GitHub 仓推候选包名(仓名规范化),pypistats 验证 + 月下载量过滤。
+ * @param {Array<{repo:string, lang:string|null}>} githubList
+ */
+async function discoverPypi(githubList, log) {
+  const seen = new Set(SEED_PYPI_PACKAGES.map((p) => normalizePypi(p)))
+  // 候选:Python 仓的 name 段规范化,去重、排除已在种子的。按 star 降序取前 PYPI_MAX_CANDIDATES 个,
+  // 既优先高价值仓,又给 pypistats(志愿者服务)逐个验证设一个有界的量。
+  const PYPI_MAX_CANDIDATES = 200
+  const cand = new Map() // norm → { guess, repo }
+  for (const g of [...githubList].filter((g) => g.lang === 'Python').sort((a, b) => b.stars - a.stars)) {
+    if (cand.size >= PYPI_MAX_CANDIDATES) break
+    const nameSeg = g.repo.slice(g.repo.indexOf('/') + 1)
+    const guess = normalizePypi(nameSeg)
+    if (!guess || seen.has(guess) || cand.has(guess)) continue
+    if (JUNK_RE.test(nameSeg)) continue
+    cand.set(guess, { guess, repo: g.repo })
+  }
+  const candArr = [...cand.values()]
+  log(`  [pypi] Python 仓推出候选 ${candArr.length},pypistats 并发验证(≥${PYPI_MIN_MONTHLY}/月)…`)
+
+  // 有界并发(6 路;pypistats 是志愿者服务,并发压低些)。
+  const monthlies = await pool(candArr, 6, ({ guess }) => pypiMonthly(guess))
+  const list = []
+  candArr.forEach(({ guess, repo }, i) => {
+    const monthly = monthlies[i]
+    if (monthly != null && monthly >= PYPI_MIN_MONTHLY) list.push({ name: guess, monthly, repo })
+  })
+  list.sort((a, b) => b.monthly - a.monthly)
+  log(`  [pypi] 过关 ${list.length} / 候选 ${candArr.length}`)
   return list
 }
 
@@ -223,27 +346,30 @@ async function main() {
   if (!token) throw new Error('missing GITHUB_TOKEN')
   const log = (m) => console.log(`[${new Date().toISOString()}] ${m}`)
 
-  log(`discover start: gh 门槛 ≥${GH_MIN_STARS}★ & ${GH_ALIVE_MONTHS} 月内活跃;npm popularity ≥${NPM_MIN_POPULARITY}`)
+  log(
+    `discover start: gh ≥${GH_MIN_STARS}★ & ${GH_ALIVE_MONTHS}月活跃;npm ≥${NPM_MIN_WEEKLY}/周;pypi ≥${PYPI_MIN_MONTHLY}/月`
+  )
   log('GitHub 发现:')
   const github = await discoverGithub(token, log)
-  let npm = []
-  if (DISCOVER_NPM) {
-    log('npm 发现:')
-    npm = await discoverNpm(log)
-  } else {
-    log('npm 发现:已暂停(见 NPM_KEYWORDS 注释),本轮只发现 GitHub')
-  }
+  log('npm 发现:')
+  const npm = await discoverNpm(log)
+  log('PyPI 发现:')
+  const pypi = await discoverPypi(github, log)
 
   const out = {
     generatedAt: new Date().toISOString(),
-    thresholds: { GH_MIN_STARS, GH_ALIVE_MONTHS, NPM_MIN_POPULARITY },
+    thresholds: { GH_MIN_STARS, GH_ALIVE_MONTHS, NPM_MIN_WEEKLY, PYPI_MIN_MONTHLY },
     github, // [{ repo, stars, desc, lang }]
-    npm, // [{ name, popularity, desc }]
-    pypi: [], // PyPI 无公开搜索 API,留空;后续从发现的 GitHub 仓推导
+    npm, // [{ name, weekly, desc }]
+    pypi, // [{ name, monthly, repo }]
   }
   await writeFile(OUT_PATH, JSON.stringify(out, null, 2) + '\n', 'utf8')
-  log(`写入 ${OUT_PATH}:github +${github.length},npm +${npm.length}`)
-  log(`合并后规模预估:github ${SEED_GITHUB_REPOS.length}→${SEED_GITHUB_REPOS.length + github.length}`)
+  log(`写入 ${OUT_PATH}:github +${github.length},npm +${npm.length},pypi +${pypi.length}`)
+  log(
+    `合并后规模预估:github ${SEED_GITHUB_REPOS.length}→${SEED_GITHUB_REPOS.length + github.length},` +
+      `npm ${SEED_NPM_PACKAGES.length}→${SEED_NPM_PACKAGES.length + npm.length},` +
+      `pypi ${SEED_PYPI_PACKAGES.length}→${SEED_PYPI_PACKAGES.length + pypi.length}`
+  )
 }
 
 main().catch((e) => {
