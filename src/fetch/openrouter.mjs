@@ -61,8 +61,10 @@ export async function collectOpenRouterModels({ capturedAt, writer, log = () => 
 }
 
 /**
- * 采集某日各模型 token 用量排行(需 OPENROUTER_API_KEY)。响应结构未在无 key 环境验证过,
- * 做字段容错:拿到 key 后按真实响应再校准解析。
+ * 采集模型每日 token 用量排行(需 OPENROUTER_API_KEY)。
+ * 实测:`?date=X` 返回 { data: [{ date, model_permaslug, total_tokens }] },约 1530 行跨近 30 天
+ * —— 每行带自己的日期,故一次请求即回填近一个月历史。total_tokens 是字符串。
+ * 用量实体用 permaslug(带版本),与 /models 的定价实体分开;后续项目/模型聚合层再打通。
  * @param {{ capturedAt: string, writer: any, apiKey: string, log?: (m:string)=>void }} p
  */
 export async function collectOpenRouterUsage({ capturedAt, writer, apiKey, log = () => {} }) {
@@ -70,20 +72,33 @@ export async function collectOpenRouterUsage({ capturedAt, writer, apiKey, log =
     headers: { authorization: `Bearer ${apiKey}`, 'user-agent': UA },
   })
   const json = await res.json()
-  // 预期:某种 { data: [{ model|model_permaslug, total_tokens|tokens, ... }] } 结构。容错取值。
-  const rows = Array.isArray(json?.data) ? json.data : Array.isArray(json?.rankings) ? json.rankings : []
+  const rows = Array.isArray(json?.data) ? json.data : []
   let metricsWritten = 0
-  let entitiesSeen = 0
+  const seen = new Set()
+  const dates = new Set()
   for (const r of rows) {
-    const id = r.model || r.model_permaslug || r.slug || r.name
-    const tokens = Number(r.total_tokens ?? r.tokens ?? r.token_count ?? r.count)
-    if (!id || !Number.isFinite(tokens)) continue
+    const id = r.model_permaslug || r.model
+    const tokens = Number(r.total_tokens ?? r.tokens)
+    const day = r.date || capturedAt
+    if (!id || id === 'other' || !Number.isFinite(tokens)) continue // 'other' 是长尾聚合行,非真实模型
     const entity_id = `${SOURCE}:${id}`
-    // 只补用量指标,不覆盖 models 采集写的定价/元信息。
-    writer.upsertMetric({ entity_id, metric: 'or_tokens_day', value: tokens, captured_at: capturedAt, source: SOURCE })
+    if (!seen.has(id)) {
+      seen.add(id)
+      writer.upsertEntity({
+        entity_id,
+        kind: 'openrouter',
+        ecosystem: 'global',
+        name: id,
+        url: `https://openrouter.ai/${id}`,
+        category: String(id).split('/')[0],
+        last_seen: capturedAt,
+        active: 1,
+      })
+    }
+    writer.upsertMetric({ entity_id, metric: 'or_tokens_day', value: tokens, captured_at: day, source: SOURCE })
     metricsWritten++
-    entitiesSeen++
+    dates.add(day)
   }
-  log(`openrouter usage: ${entitiesSeen} 个模型 token 用量`)
-  return { metricsWritten, entitiesSeen, missing: [] }
+  log(`openrouter usage: ${seen.size} 模型,${metricsWritten} 日用量行(跨 ${dates.size} 天)`)
+  return { metricsWritten, entitiesSeen: seen.size, missing: [] }
 }

@@ -60,6 +60,11 @@ const pypiCols = [
   { key: 'downloads_month', label: cols.dl, primary: true },
   { key: 'downloads_week', label: 'Week' },
 ]
+// 模型真实用量(OpenRouter 每日 token,含 30 天历史 → sparkline 有内容)。取 top 15。
+const modelUsage = (
+  await withSpark(await ranking('openrouter', 'or_tokens_day', ['or_tokens_day']), 'openrouter', 'or_tokens_day')
+).slice(0, 15)
+const orusageCols = [{ key: 'or_tokens_day', label: s.tokens, primary: true }]
 const vscodeCols = [{ key: 'vscode_installs', label: s.installs, primary: true }]
 const msCols = [
   { key: 'ms_downloads', label: s.downloads, primary: true },
@@ -92,6 +97,8 @@ const msCols = [
   </div>
 
   <Movers title={s.moversTitle} note={s.moversNote} rows={starMovers} gained={s.gained} now={s.now} />
+
+  {modelUsage.length > 0 && <RankTable title={s.orusage} note={s.orusageNote} rows={modelUsage} columns={orusageCols} trendLabel={s.trend} />}
 
   <RankTable title={s.github} note={s.githubNote} rows={gh} columns={ghCols} trendLabel={s.trend} />
   <RankTable title={s.npm} note={s.npmNote} rows={npm} columns={npmCols} trendLabel={s.trend} />
