@@ -6,9 +6,16 @@
 //
 // 命名:GitHub "owner/name"。改名的 repo GraphQL 返回 null,collector 记 missing 并跳过,
 // 不误伤整批——发现 missing 时把名字改成新名即可。名字变动很常见,定期核对。
+//
+// 两层结构:SEED_*(手工策展基准,人改这里)+ discovered.json(src/discover.mjs 自动发现)。
+// 导出的 GITHUB_REPOS/NPM_PACKAGES/PYPI_PACKAGES = SEED_* ∪ discovered,去重。collector 只认导出的合并集。
+// 自动发现只增不改种子;去重以 SEED_* 为准(见 discover.mjs),故重跑发现不会吞掉旧发现。
+
+import { readFileSync, existsSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 
 /** @type {string[]} */
-export const GITHUB_REPOS = [
+export const SEED_GITHUB_REPOS = [
   // ── agent 框架 ──
   'langchain-ai/langchain',
   'langchain-ai/langgraph',
@@ -92,7 +99,7 @@ export const GITHUB_REPOS = [
 
 // npm 包(周下载量)。scoped 用 @scope/name。
 /** @type {string[]} */
-export const NPM_PACKAGES = [
+export const SEED_NPM_PACKAGES = [
   'langchain',
   '@langchain/core',
   '@langchain/community',
@@ -124,7 +131,7 @@ export const NPM_PACKAGES = [
 
 // PyPI 包(下载量,名字用 PyPI 规范化后的连字符形式)。
 /** @type {string[]} */
-export const PYPI_PACKAGES = [
+export const SEED_PYPI_PACKAGES = [
   'langchain',
   'langchain-core',
   'langchain-community',
@@ -204,3 +211,41 @@ export const VSCODE_EXTENSIONS = [
   'aminer.codegeex', // CodeGeeX(智谱)
   'Alibaba-Cloud.tongyi-lingma', // 通义灵码
 ]
+
+// ── 自动发现合并层 ──────────────────────────────────────────────
+// discovered.json 由 src/discover.mjs 生成(可能不存在:fresh clone / 尚未跑发现)。缺失时静默降级为纯种子。
+const DISCOVERED_PATH = fileURLToPath(new URL('./discovered.json', import.meta.url))
+
+/** @returns {{ github: Array<{repo:string}>, npm: Array<{name:string}>, pypi: Array<{name:string}> }} */
+function loadDiscovered() {
+  const empty = { github: [], npm: [], pypi: [] }
+  if (!existsSync(DISCOVERED_PATH)) return empty
+  try {
+    const j = JSON.parse(readFileSync(DISCOVERED_PATH, 'utf8'))
+    return { github: j.github ?? [], npm: j.npm ?? [], pypi: j.pypi ?? [] }
+  } catch {
+    return empty // 损坏的发现文件绝不能拖垮采集:降级为纯种子。
+  }
+}
+
+/** 合并种子与新增标识符,大小写不敏感去重,保持"种子在前、发现在后"的稳定顺序。 */
+function mergeUnique(seed, extra) {
+  const seen = new Set(seed.map((s) => s.toLowerCase()))
+  const out = [...seed]
+  for (const id of extra) {
+    const key = id.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(id)
+  }
+  return out
+}
+
+const _disc = loadDiscovered()
+
+/** @type {string[]} 采集目标 = 种子 ∪ 自动发现。 */
+export const GITHUB_REPOS = mergeUnique(SEED_GITHUB_REPOS, _disc.github.map((d) => d.repo))
+/** @type {string[]} */
+export const NPM_PACKAGES = mergeUnique(SEED_NPM_PACKAGES, _disc.npm.map((d) => d.name))
+/** @type {string[]} */
+export const PYPI_PACKAGES = mergeUnique(SEED_PYPI_PACKAGES, _disc.pypi.map((d) => d.name))
