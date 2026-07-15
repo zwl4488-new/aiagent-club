@@ -1,0 +1,47 @@
+---
+import { compact, full } from '../lib/format.mjs'
+// props: title, note, overhyped [{name,gh,stars,downloads}], underrated [...], strings
+const { title, note, overhyped = [], underrated = [], overLabel, underLabel, starsShort, dlMo } = Astro.props
+
+function row(r) {
+  return { ...r, ghUrl: `https://github.com/${r.gh}` }
+}
+---
+<section class="hype">
+  <div class="hype-head">
+    <h2>{title}</h2>
+    <p class="note">{note}</p>
+  </div>
+  <div class="hype-cols">
+    <div class="hype-col over">
+      <h3>{overLabel}</h3>
+      <ol>
+        {overhyped.map(row).map((r) => (
+          <li>
+            <a class="name" href={r.ghUrl} target="_blank" rel="noopener">{r.name}</a>
+            <span class="nums">
+              <span class="stars" title={`${full(r.stars)} ${starsShort}`}>{compact(r.stars)} <em>{starsShort}</em></span>
+              <span class="vs">·</span>
+              <span class="dl low" title={`${full(Math.round(r.downloads))} ${dlMo}`}>{compact(r.downloads)} <em>{dlMo}</em></span>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
+    <div class="hype-col under">
+      <h3>{underLabel}</h3>
+      <ol>
+        {underrated.map(row).map((r) => (
+          <li>
+            <a class="name" href={r.ghUrl} target="_blank" rel="noopener">{r.name}</a>
+            <span class="nums">
+              <span class="stars low" title={`${full(r.stars)} ${starsShort}`}>{compact(r.stars)} <em>{starsShort}</em></span>
+              <span class="vs">·</span>
+              <span class="dl" title={`${full(Math.round(r.downloads))} ${dlMo}`}>{compact(r.downloads)} <em>{dlMo}</em></span>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </div>
+</section>

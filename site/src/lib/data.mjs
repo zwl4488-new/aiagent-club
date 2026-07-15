@@ -126,6 +126,21 @@ export async function seriesByKind(kind, metric) {
   return map
 }
 
+/**
+ * 某指标下每个实体的"最新值",返回 entity_id → value。一次查询(相关子查询取各自 max 日期)。
+ * @param {string} metric
+ * @returns {Promise<Map<string, number>>}
+ */
+export async function latestMap(metric) {
+  const rows = await query(`
+    SELECT m.entity_id, m.value
+    FROM metrics m
+    WHERE m.metric = '${metric}'
+      AND m.captured_at = (SELECT max(captured_at) FROM metrics m2 WHERE m2.entity_id = m.entity_id AND m2.metric = '${metric}')
+  `)
+  return new Map(rows.map((r) => [r.entity_id, r.value]))
+}
+
 /** ISO 日期减 n 天。 */
 function minusDays(isoDay, n) {
   const d = new Date(isoDay + 'T00:00:00Z')

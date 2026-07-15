@@ -2,7 +2,9 @@
 import Base from '../layouts/Base.astro'
 import RankTable from './RankTable.astro'
 import Movers from './Movers.astro'
-import { overview, ranking, seriesByKind, movers } from '../lib/data.mjs'
+import HypeGap from './HypeGap.astro'
+import { overview, ranking, seriesByKind, movers, latestMap } from '../lib/data.mjs'
+import { hypeVsUsage } from '../lib/projects.mjs'
 import { t } from '../lib/i18n.mjs'
 
 const { locale = 'en' } = Astro.props
@@ -33,6 +35,16 @@ const starMovers = (await movers('github', 'stars', 7))
   .sort((a, b) => b.delta - a.delta)
   .slice(0, 10)
   .map((r) => ({ ...r, spark: downsample(r.spark) }))
+
+// 热度 vs 真实使用:star(关注)对包下载(使用)的排名落差。核心差异化信号。
+const [starMap, dlMonthMap, dlWeekMap] = await Promise.all([
+  latestMap('stars'),
+  latestMap('downloads_month'),
+  latestMap('downloads_week'),
+])
+const hype = hypeVsUsage(starMap, dlMonthMap, dlWeekMap)
+const overhyped = [...hype].sort((a, b) => b.gap - a.gap).slice(0, 6)
+const underrated = [...hype].sort((a, b) => a.gap - b.gap).slice(0, 6)
 
 const gh = await withSpark(await ranking('github', 'stars', ['stars', 'forks', 'commits']), 'github', 'stars')
 const npm = await withSpark(await ranking('npm', 'downloads_week', ['downloads_week']), 'npm', 'downloads_day')
@@ -95,6 +107,19 @@ const msCols = [
     <div class="stat"><b>{ov.days}</b><span>{s.days}</span></div>
     <div class="stat"><b>{ov.latest}</b><span>{s.snapshot}</span></div>
   </div>
+
+  {overhyped.length > 0 && (
+    <HypeGap
+      title={s.hypeTitle}
+      note={s.hypeNote}
+      overhyped={overhyped}
+      underrated={underrated}
+      overLabel={s.overhyped}
+      underLabel={s.underrated}
+      starsShort={s.starsShort}
+      dlMo={s.dlMo}
+    />
+  )}
 
   <Movers title={s.moversTitle} note={s.moversNote} rows={starMovers} gained={s.gained} now={s.now} />
 
