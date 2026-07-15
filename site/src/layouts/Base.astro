@@ -4,7 +4,7 @@ import { ClientRouter } from 'astro:transitions'
 // props: locale ('en'|'zh'), title, description, path (当前页路径)
 //        altEn / altZh: 本页的英文 / 中文对应路径(hreflang 互指)。默认首页。
 const { locale = 'en', title, description, path = '/', altEn = '/', altZh = '/zh/' } = Astro.props
-const SITE = 'https://aiagent.club'
+const SITE = 'https://www.aiagent.club'
 ---
 <!doctype html>
 <html lang={locale}>

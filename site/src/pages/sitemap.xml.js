@@ -1,7 +1,7 @@
 // 构建期生成 sitemap.xml —— 首页(中英)+ 每个实体的中英详情页。搜索引擎据此收录全部长尾页。
 import { buildEntityPages } from '../lib/detail.mjs'
 
-const SITE = 'https://aiagent.club'
+const SITE = 'https://www.aiagent.club'
 
 export async function GET() {
   const pages = await buildEntityPages()
