@@ -37,7 +37,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: aiagent-club-fetch
     env:
-      DB_PATH: data.db
+      # 绝对路径:构建步骤在 site/ 下跑(cd site),相对 data.db 会解析成 site/data.db 而找不到;
+      # 用 workspace 绝对路径,pull(在仓库根跑)与 build(在 site/ 跑)指向同一个文件。
+      DB_PATH: ${{ github.workspace }}/data.db
       R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
       R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
