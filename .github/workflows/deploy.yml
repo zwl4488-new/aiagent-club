@@ -1,0 +1,87 @@
+# 部署管道 —— 从 R2 拉最新 data.db → 构建静态站 → 同时推 Cloudflare Pages(境外)+ 阿里云 OSS(境内)。
+#
+# 计算集中在 Actions:与采集同一份 data.db,构建产物一致,两端只是分发。
+# 时序:采集在 01:17 / 13:47 UTC 跑完并推 R2,故部署排在其后(02:10 / 14:10),保证构建到的是当日最新数据。
+# push 触发用于代码/模板/发现清单变更即时上线(此时构建的是 R2 当前数据,内容会在下次定时部署随采集刷新)。
+#
+# 需要的 Actions secrets(加在 Environment: aiagent-club-fetch,与采集同一处):
+#   R2_ACCOUNT_ID  R2_ACCESS_KEY_ID  R2_SECRET_ACCESS_KEY  R2_BUCKET  S3_API_ENDPOINT   (已有,采集在用)
+#   CLOUDFLARE_API_TOKEN            —— 权限 Account › Cloudflare Pages › Edit
+#   CLOUDFLARE_PAGES_PROJECT_NAME  —— Pages 项目名(如 aiagent-club-www)
+#   ALIYUN_ACCESSKEY_ID  ALIYUN_ACCESSKEY_SECRET  ALIYUN_OSS_ENDPOINT  ALIYUN_OSS_BUCKET
+# CLOUDFLARE_ACCOUNT_ID 复用 R2_ACCOUNT_ID(同一账号),无需另加。
+
+name: deploy
+
+on:
+  schedule:
+    - cron: '10 2 * * *'   # 采集(01:17)+ 推 R2 之后
+    - cron: '10 14 * * *'  # 采集(13:47)之后
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'src/**'
+      - 'db/**'
+      - 'src/discovered.json'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch: {}
+
+# 串行:两端分发别并发跑(避免半新半旧)。
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: aiagent-club-fetch
+    env:
+      DB_PATH: data.db
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      S3_API_ENDPOINT: ${{ secrets.S3_API_ENDPOINT }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Ensure sqlite3
+        run: sqlite3 --version || (sudo apt-get update && sudo apt-get install -y sqlite3)
+
+      # 站点构建期读根目录 data.db(site/src/lib/data.mjs 默认路径 ../../../data.db)。
+      - name: Pull data.db from R2
+        run: node src/r2.mjs pull data.db "$DB_PATH"
+
+      - name: Build site
+        run: |
+          cd site
+          npm ci
+          npm run build
+
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+        run: |
+          npx --yes wrangler@4 pages deploy site/dist \
+            --project-name="${{ secrets.CLOUDFLARE_PAGES_PROJECT_NAME }}" \
+            --branch=main --commit-dirty=true
+
+      - name: Deploy to Aliyun OSS
+        env:
+          OSS_ENDPOINT: ${{ secrets.ALIYUN_OSS_ENDPOINT }}
+          OSS_ID: ${{ secrets.ALIYUN_ACCESSKEY_ID }}
+          OSS_SECRET: ${{ secrets.ALIYUN_ACCESSKEY_SECRET }}
+          OSS_BUCKET: ${{ secrets.ALIYUN_OSS_BUCKET }}
+        run: |
+          curl -sSL https://gosspublic.alicdn.com/ossutil/1.7.19/ossutil64 -o /tmp/ossutil
+          chmod +x /tmp/ossutil
+          /tmp/ossutil config -e "$OSS_ENDPOINT" -i "$OSS_ID" -k "$OSS_SECRET" -L CH
+          # -r 递归、-f 覆盖同名。dist/ 内容整体上传到 bucket 根。实体集只增不减,孤儿对象极少,
+          # 暂不做 --delete 清理(ossutil 1.7 cp 不支持);需要时再单独跑一次清理。
+          /tmp/ossutil cp -r -f site/dist/ "oss://$OSS_BUCKET/"
