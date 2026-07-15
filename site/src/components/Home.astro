@@ -41,6 +41,13 @@ const pypi = await withSpark(
   'pypi',
   'downloads_day'
 )
+// 新源:编码 agent 安装量(vscode)、国产模型下载量(modelscope)。sparkline 从今起积累(现单点)。
+const vscode = await withSpark(await ranking('vscode', 'vscode_installs', ['vscode_installs']), 'vscode', 'vscode_installs')
+const modelscope = await withSpark(
+  await ranking('modelscope', 'ms_downloads', ['ms_downloads', 'ms_stars']),
+  'modelscope',
+  'ms_downloads'
+)
 
 const cols = s.cols
 const ghCols = [
@@ -52,6 +59,11 @@ const npmCols = [{ key: 'downloads_week', label: cols.dl, primary: true }]
 const pypiCols = [
   { key: 'downloads_month', label: cols.dl, primary: true },
   { key: 'downloads_week', label: 'Week' },
+]
+const vscodeCols = [{ key: 'vscode_installs', label: s.installs, primary: true }]
+const msCols = [
+  { key: 'ms_downloads', label: s.downloads, primary: true },
+  { key: 'ms_stars', label: cols.stars },
 ]
 ---
 <Base locale={locale} title={`aiagent.club — ${s.tagline}`} description={s.intro} path={path}>
@@ -84,6 +96,8 @@ const pypiCols = [
   <RankTable title={s.github} note={s.githubNote} rows={gh} columns={ghCols} trendLabel={s.trend} />
   <RankTable title={s.npm} note={s.npmNote} rows={npm} columns={npmCols} trendLabel={s.trend} />
   <RankTable title={s.pypi} note={s.pypiNote} rows={pypi} columns={pypiCols} trendLabel={s.trend} />
+  {vscode.length > 0 && <RankTable title={s.vscode} note={s.vscodeNote} rows={vscode} columns={vscodeCols} trendLabel={s.trend} />}
+  {modelscope.length > 0 && <RankTable title={s.modelscope} note={s.modelscopeNote} rows={modelscope} columns={msCols} trendLabel={s.trend} />}
 
   <footer class="site">{s.footer}</footer>
 
