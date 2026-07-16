@@ -1,0 +1,139 @@
+---
+import Base from '../layouts/Base.astro'
+import { t } from '../lib/i18n.mjs'
+
+// props: locale
+const { locale = 'en' } = Astro.props
+const s = t(locale)
+const base = locale === 'zh' ? '/zh' : ''
+const path = locale === 'zh' ? '/zh/search' : '/search'
+const otherPath = locale === 'zh' ? '/search' : '/zh/search'
+const title = `${s.search.title} | aiagent.club`
+---
+<Base locale={locale} title={title} description={s.search.hint} path={path} altEn={locale === 'zh' ? otherPath : path} altZh={locale === 'zh' ? path : otherPath}>
+  <header class="site">
+    <div>
+      <h1><a href={`${base}/`} style="text-decoration:none;color:inherit">aiagent<span class="dot">.</span>club</a></h1>
+      <p class="tagline">{s.search.title}</p>
+    </div>
+    <div class="controls">
+      <a class="langlink" href={otherPath} data-astro-prefetch="hover">{s.switchLang}</a>
+    </div>
+  </header>
+
+  <nav class="topnav">
+    <a href={`${base}/`}>{s.nav.rankings}</a>
+    <a href={`${base}/changes`}>{s.nav.changelog}</a>
+    <a href={`${base}/pricing`}>{s.nav.pricing}</a>
+    <a href={`${base}/browse`}>{s.nav.browse}</a>
+    <a href={`${base}/methodology`}>{s.nav.methodology}</a>
+    <a href={`${base}/search`} aria-current="page">{s.nav.search}</a>
+  </nav>
+
+  <div class="search-box">
+    <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder={s.search.placeholder} aria-label={s.search.title} />
+  </div>
+  <p id="search-meta" class="note"></p>
+  <ul id="search-results" class="search-results"></ul>
+
+  <p class="browse-cta"><a href={`${base}/`}>{s.detail.backHome}</a></p>
+  <footer class="site">{s.footer}</footer>
+
+  <script is:inline define:vars={{ base, kinds: s.kindLabel, tx: { hint: s.search.hint, empty: s.search.empty, results: s.search.results } }}>
+    // 纯静态站的客户端搜索:拉一次 /search.json(源语言数据),在浏览器里按名称/简介过滤 + 排序。
+    ;(function () {
+      const input = document.getElementById('q')
+      const meta = document.getElementById('search-meta')
+      const list = document.getElementById('search-results')
+      if (!input || !list) return
+      let DATA = null
+      let loading = false
+
+      const detailHref = (slug) => `${base}/p/${slug}`
+
+      function render(items, q) {
+        list.textContent = ''
+        if (!q) { meta.textContent = tx.hint; return }
+        if (!items.length) { meta.textContent = tx.empty; return }
+        meta.textContent = items.length + ' ' + tx.results
+        const frag = document.createDocumentFragment()
+        for (const it of items) {
+          const li = document.createElement('li')
+          const a = document.createElement('a')
+          a.href = detailHref(it.s)
+          a.className = 'sr-item'
+          const badge = document.createElement('span')
+          badge.className = 'sr-kind'
+          badge.textContent = kinds[it.k] || it.k
+          const name = document.createElement('span')
+          name.className = 'sr-name'
+          name.textContent = it.n
+          a.appendChild(badge)
+          a.appendChild(name)
+          if (it.d) {
+            const d = document.createElement('span')
+            d.className = 'sr-desc'
+            d.textContent = it.d
+            a.appendChild(d)
+          }
+          li.appendChild(a)
+          frag.appendChild(li)
+        }
+        list.appendChild(frag)
+      }
+
+      function score(it, q) {
+        const n = it.n.toLowerCase()
+        const d = (it.d || '').toLowerCase()
+        let sc = 0
+        if (n === q) sc = 1000
+        else if (n.startsWith(q)) sc = 200
+        else if (n.includes(q)) sc = 100
+        else if (d.includes(q)) sc = 20
+        else return 0
+        // 同分下大项目靠前(log 缩放,避免体量完全压过相关性)
+        return sc + Math.log10((it.v || 0) + 10)
+      }
+
+      function search(raw) {
+        const q = raw.trim().toLowerCase()
+        if (!DATA || !q) { render([], q); return }
+        const hits = []
+        for (const it of DATA) {
+          const sc = score(it, q)
+          if (sc > 0) hits.push([sc, it])
+        }
+        hits.sort((a, b) => b[0] - a[0])
+        render(hits.slice(0, 60).map((h) => h[1]), q)
+      }
+
+      async function ensureData() {
+        if (DATA || loading) return
+        loading = true
+        try {
+          const res = await fetch('/search.json')
+          DATA = await res.json()
+        } catch (e) {
+          meta.textContent = '⚠︎ index failed to load'
+        }
+        loading = false
+      }
+
+      async function onInput() {
+        await ensureData()
+        search(input.value)
+      }
+
+      input.addEventListener('input', onInput)
+      // 支持 ?q= 深链:进页面即带出结果。
+      const params = new URLSearchParams(location.search)
+      const q0 = params.get('q')
+      if (q0) { input.value = q0 }
+      meta.textContent = tx.hint
+      // 预取索引(聚焦或已有 q 时),让首次输入即时。
+      input.addEventListener('focus', ensureData, { once: true })
+      if (q0) onInput()
+      input.focus()
+    })()
+  </script>
+</Base>

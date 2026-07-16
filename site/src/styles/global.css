@@ -248,3 +248,21 @@ footer.site a { color: var(--accent); }
 .about .about-src { color: var(--fg-soft); font-size: 0.85rem; margin-top: 0.2rem; }
 .about .about-src a { color: var(--accent); text-decoration: none; }
 .about .about-src a:hover { text-decoration: underline; }
+
+/* ── 搜索 / search ── */
+.search-box { margin: 1.25rem 0 0.5rem; }
+.search-box input {
+  width: 100%; box-sizing: border-box; font-size: 1.05rem; padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--bg-soft); color: var(--fg);
+}
+.search-box input:focus { outline: none; border-color: var(--accent); }
+.search-results { list-style: none; margin: 0.5rem 0 0; padding: 0; }
+.search-results .sr-item {
+  display: flex; align-items: baseline; gap: 0.6rem; padding: 0.5rem 0.4rem; border-radius: 7px;
+  text-decoration: none; color: var(--fg); border-bottom: 1px solid var(--border);
+}
+.search-results .sr-item:hover { background: var(--bg-soft); }
+.sr-kind { flex-shrink: 0; font-size: 0.72rem; color: var(--fg-soft); border: 1px solid var(--border); border-radius: 999px; padding: 0.08rem 0.5rem; }
+.sr-name { font-weight: 600; flex-shrink: 0; }
+.sr-item:hover .sr-name { color: var(--accent); }
+.sr-desc { color: var(--fg-soft); font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

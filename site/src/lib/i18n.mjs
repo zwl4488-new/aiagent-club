@@ -44,7 +44,14 @@ export const STRINGS = {
     browseAll: (n) => `Browse all ${n} tracked projects →`,
     browseTitle: 'All tracked projects',
     browseIntro: 'Every project aiagent.club tracks, grouped by source. Open any one for its metrics and trend over time.',
-    nav: { rankings: 'Rankings', changelog: 'Changelog', browse: 'Browse', methodology: 'Methodology', pricing: 'Pricing' },
+    nav: { rankings: 'Rankings', changelog: 'Changelog', browse: 'Browse', methodology: 'Methodology', pricing: 'Pricing', search: 'Search' },
+    search: {
+      title: 'Search',
+      placeholder: 'Search projects…',
+      hint: 'Search all tracked projects by name or description.',
+      empty: 'No matches.',
+      results: 'results',
+    },
     pricing: {
       title: 'Model pricing',
       intro:
@@ -158,7 +165,14 @@ export const STRINGS = {
     browseAll: (n) => `浏览全部 ${n} 个追踪项目 →`,
     browseTitle: '全部追踪项目',
     browseIntro: 'aiagent.club 追踪的所有项目,按来源分组。点开任意项目查看其指标与随时间的趋势。',
-    nav: { rankings: '榜单', changelog: '变更日志', browse: '全部项目', methodology: '方法论', pricing: '定价' },
+    nav: { rankings: '榜单', changelog: '变更日志', browse: '全部项目', methodology: '方法论', pricing: '定价', search: '搜索' },
+    search: {
+      title: '搜索',
+      placeholder: '搜索项目…',
+      hint: '按名称或简介搜索全部追踪项目。',
+      empty: '没有匹配。',
+      results: '个结果',
+    },
     pricing: {
       title: '模型定价',
       intro:
