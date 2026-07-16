@@ -41,10 +41,19 @@ async function ensureSchema(dbPath) {
  * @param {string} metric
  * @returns {Promise<boolean>}
  */
+// 判定"已回填过":要有深度历史(跨度 > 30 天),而非只有近几天的日采点。
+// 关键:自动发现来的实体每天累积一个点,几天后就 >1 个 captured_at——用旧的"n>1"判定会把它们
+// 误判成已回填而永久跳过,深度历史再也补不上。改用首末日期跨度,只有真正回填过(历史回到建库/首发)才跳过。
+const BACKFILL_MIN_SPAN_DAYS = 30
 async function alreadyBackfilled(dbPath, entityId, metric) {
   const safe = entityId.replace(/'/g, "''")
-  const [r] = await query(dbPath, `SELECT count(DISTINCT captured_at) n FROM metrics WHERE entity_id='${safe}' AND metric='${metric}'`)
-  return (r?.n ?? 0) > 1
+  const [r] = await query(
+    dbPath,
+    `SELECT count(DISTINCT captured_at) n, min(captured_at) lo, max(captured_at) hi FROM metrics WHERE entity_id='${safe}' AND metric='${metric}'`
+  )
+  if (!r || (r.n ?? 0) <= 1) return false
+  const span = Math.round((new Date(r.hi + 'T00:00:00Z') - new Date(r.lo + 'T00:00:00Z')) / 86400000)
+  return span > BACKFILL_MIN_SPAN_DAYS
 }
 
 // GraphQL 请求走 github.mjs 的 githubGraphQLRequest(含瞬时错误退避重试)。
