@@ -12,6 +12,7 @@ export const PRIMARY = {
   pypi: 'downloads_month',
   openrouter: 'or_tokens_day',
   modelscope: 'ms_downloads',
+  huggingface: 'hf_downloads',
   vscode: 'vscode_installs',
 }
 
@@ -22,6 +23,7 @@ export const SHOW_METRICS = {
   pypi: ['downloads_month', 'downloads_week', 'downloads_day'],
   openrouter: ['or_tokens_day', 'price_prompt_mtok', 'price_completion_mtok', 'context_length'],
   modelscope: ['ms_downloads', 'ms_stars'],
+  huggingface: ['hf_downloads', 'hf_likes'],
   vscode: ['vscode_installs', 'vscode_rating'],
 }
 

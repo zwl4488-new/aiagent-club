@@ -65,6 +65,12 @@ const modelscope = await withSpark(
   'modelscope',
   'ms_downloads'
 )
+// 开源模型真实拉取量(HuggingFace 近30天下载 + likes)。sparkline 从今起积累(现单点)。
+const hf = await withSpark(
+  await ranking('huggingface', 'hf_downloads', ['hf_downloads', 'hf_likes']),
+  'huggingface',
+  'hf_downloads'
+)
 
 const cols = s.cols
 const ghCols = [
@@ -86,6 +92,10 @@ const vscodeCols = [{ key: 'vscode_installs', label: s.installs, primary: true }
 const msCols = [
   { key: 'ms_downloads', label: s.downloads, primary: true },
   { key: 'ms_stars', label: cols.stars },
+]
+const hfCols = [
+  { key: 'hf_downloads', label: s.downloads, primary: true },
+  { key: 'hf_likes', label: 'Likes' },
 ]
 ---
 <Base locale={locale} title={`aiagent.club — ${s.tagline}`} description={s.intro} path={path}>
@@ -145,6 +155,7 @@ const msCols = [
   <RankTable title={s.npm} note={s.npmNote} rows={npm} columns={npmCols} trendLabel={s.trend} base={base} />
   <RankTable title={s.pypi} note={s.pypiNote} rows={pypi} columns={pypiCols} trendLabel={s.trend} base={base} />
   {vscode.length > 0 && <RankTable title={s.vscode} note={s.vscodeNote} rows={vscode} columns={vscodeCols} trendLabel={s.trend} base={base} />}
+  {hf.length > 0 && <RankTable title={s.hf} note={s.hfNote} rows={hf} columns={hfCols} trendLabel={s.trend} base={base} />}
   {modelscope.length > 0 && <RankTable title={s.modelscope} note={s.modelscopeNote} rows={modelscope} columns={msCols} trendLabel={s.trend} base={base} />}
 
   <p class="browse-cta"><a href={`${base}/browse`}>{s.browseAll(ghTotal)}</a></p>

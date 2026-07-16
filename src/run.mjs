@@ -20,8 +20,9 @@ import { collectNpm } from './fetch/npm.mjs'
 import { collectPypi } from './fetch/pypi.mjs'
 import { collectOpenRouterModels, collectOpenRouterUsage } from './fetch/openrouter.mjs'
 import { collectModelScope } from './fetch/modelscope.mjs'
+import { collectHuggingFace } from './fetch/huggingface.mjs'
 import { collectVscode } from './fetch/vscode.mjs'
-import { GITHUB_REPOS, NPM_PACKAGES, PYPI_PACKAGES, MODELSCOPE_MODELS, VSCODE_EXTENSIONS } from './entities.mjs'
+import { GITHUB_REPOS, NPM_PACKAGES, PYPI_PACKAGES, MODELSCOPE_MODELS, VSCODE_EXTENSIONS, HF_MODELS } from './entities.mjs'
 import { pruneAndDedup } from './prune.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -119,6 +120,12 @@ const SOURCES = {
   async vscode({ writer, capturedAt, log }) {
     // VS Code Marketplace 安装量,公开无需 key。
     const { metricsWritten, missing } = await collectVscode({ extensions: VSCODE_EXTENSIONS, capturedAt, writer, log })
+    return { metricsWritten, missing }
+  },
+
+  async huggingface({ writer, capturedAt, log }) {
+    // 开源模型近30天下载量 + likes,公开无需 key。
+    const { metricsWritten, missing } = await collectHuggingFace({ models: HF_MODELS, capturedAt, writer, log })
     return { metricsWritten, missing }
   },
 }

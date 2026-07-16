@@ -192,6 +192,43 @@ export const MODELSCOPE_MODELS = [
   'LLM-Research/Meta-Llama-3.1-8B-Instruct',
 ]
 
+// HuggingFace 开源模型(近30天下载量 + likes,ecosystem=global)。org/name,策展主流开源 LLM /
+// agent 常用底座。改名/下架的 collector 记 missing 跳过,不误伤整源;定期核对。
+/** @type {string[]} */
+export const HF_MODELS = [
+  // ── Meta Llama ──
+  'meta-llama/Llama-3.1-8B-Instruct',
+  'meta-llama/Llama-3.1-70B-Instruct',
+  'meta-llama/Llama-3.3-70B-Instruct',
+  'meta-llama/Llama-3.2-3B-Instruct',
+  // ── Qwen ──
+  'Qwen/Qwen2.5-7B-Instruct',
+  'Qwen/Qwen2.5-72B-Instruct',
+  'Qwen/Qwen2.5-Coder-32B-Instruct',
+  'Qwen/QwQ-32B',
+  // ── DeepSeek ──
+  'deepseek-ai/DeepSeek-R1',
+  'deepseek-ai/DeepSeek-V3',
+  'deepseek-ai/DeepSeek-Coder-V2-Instruct',
+  // ── Mistral ──
+  'mistralai/Mistral-7B-Instruct-v0.3',
+  'mistralai/Mixtral-8x7B-Instruct-v0.1',
+  'mistralai/Mistral-Nemo-Instruct-2407',
+  // ── Google Gemma ──
+  'google/gemma-2-9b-it',
+  'google/gemma-2-27b-it',
+  // ── Microsoft Phi ──
+  'microsoft/Phi-3.5-mini-instruct',
+  'microsoft/phi-4',
+  // ── agent 常用微调 / 其它 ──
+  'HuggingFaceH4/zephyr-7b-beta',
+  'NousResearch/Hermes-3-Llama-3.1-8B',
+  'teknium/OpenHermes-2.5-Mistral-7B',
+  'bigcode/starcoder2-15b',
+  'openai/gpt-oss-20b',
+  'openai/gpt-oss-120b',
+]
+
 // VS Code Marketplace 扩展(编码 agent/助手,安装量)。publisher.extension。含国产(灵码/CodeGeeX)。
 /** @type {string[]} */
 export const VSCODE_EXTENSIONS = [
