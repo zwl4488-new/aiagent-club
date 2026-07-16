@@ -64,6 +64,9 @@ jobs:
         run: node src/r2.mjs pull data.db "$DB_PATH"
 
       - name: Build site
+        # 回填后 data.db 变大(时序更深),给 node 加堆头量,避免构建期 OOM。
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
         run: |
           cd site
           npm ci
