@@ -175,6 +175,37 @@ export async function latestMetricsAll() {
   return map
 }
 
+/**
+ * 模型定价景观(OpenRouter):每个模型最新的输入/输出单价、上下文、日 token 用量。
+ * 取价格有效(price_prompt_mtok>0)的模型 —— 过滤掉价格哨兵值(<0)与免费档(=0);
+ * 日用量(or_tokens_day)作为附带信号一并带出(有则显示)。按输入单价升序(最便宜在前)。
+ * 只保留 top-usage 覆盖不到但仍付费的主流模型景观,返回可直接喂给 RankTable 的行。
+ * @returns {Promise<Array<{ entity_id, name, url, values: Record<string, number> }>>}
+ */
+export async function modelPricing() {
+  const rows = await query(`
+    SELECT m.entity_id, m.metric, m.value
+    FROM metrics m JOIN entities e ON e.entity_id = m.entity_id
+    WHERE e.kind = 'openrouter'
+      AND m.metric IN ('price_prompt_mtok','price_completion_mtok','context_length','or_tokens_day')
+      AND m.captured_at = (SELECT max(captured_at) FROM metrics m2 WHERE m2.entity_id = m.entity_id AND m2.metric = m.metric)
+  `)
+  const by = new Map()
+  for (const r of rows) {
+    if (!by.has(r.entity_id)) by.set(r.entity_id, {})
+    by.get(r.entity_id)[r.metric] = r.value
+  }
+  const ents = await query(`SELECT entity_id, name, url FROM entities WHERE kind = 'openrouter'`)
+  const meta = new Map(ents.map((e) => [e.entity_id, e]))
+  const out = []
+  for (const [id, v] of by) {
+    if (!(v.price_prompt_mtok > 0)) continue // 价格有效即可;用量作为附带信号(可缺)
+    const m = meta.get(id) || {}
+    out.push({ entity_id: id, name: m.name || id, url: m.url, values: v })
+  }
+  return out.sort((a, b) => a.values.price_prompt_mtok - b.values.price_prompt_mtok)
+}
+
 /** ISO 日期减 n 天。 */
 function minusDays(isoDay, n) {
   const d = new Date(isoDay + 'T00:00:00Z')

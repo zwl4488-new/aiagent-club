@@ -44,7 +44,18 @@ export const STRINGS = {
     browseAll: (n) => `Browse all ${n} tracked projects →`,
     browseTitle: 'All tracked projects',
     browseIntro: 'Every project aiagent.club tracks, grouped by source. Open any one for its metrics and trend over time.',
-    nav: { rankings: 'Rankings', changelog: 'Changelog', browse: 'Browse', methodology: 'Methodology' },
+    nav: { rankings: 'Rankings', changelog: 'Changelog', browse: 'Browse', methodology: 'Methodology', pricing: 'Pricing' },
+    pricing: {
+      title: 'Model pricing',
+      intro:
+        'The cost of tokens across models on OpenRouter, ranked cheapest-first by input price — the falling cost of intelligence, measured daily. Real daily usage is shown where the model appears in usage data.',
+      tableTitle: 'Cheapest models by input price',
+      note: 'USD per million tokens, cheapest first. Priced models only — free tiers and unpriced variants excluded. Tokens/day shown where available. Trend is input price over time.',
+      inCol: '$/Mtok in',
+      outCol: '$/Mtok out',
+      ctxCol: 'Context',
+      priceTrend: 'Price trend',
+    },
     events: {
       title: 'Changelog',
       intro:
@@ -145,7 +156,18 @@ export const STRINGS = {
     browseAll: (n) => `浏览全部 ${n} 个追踪项目 →`,
     browseTitle: '全部追踪项目',
     browseIntro: 'aiagent.club 追踪的所有项目,按来源分组。点开任意项目查看其指标与随时间的趋势。',
-    nav: { rankings: '榜单', changelog: '变更日志', browse: '全部项目', methodology: '方法论' },
+    nav: { rankings: '榜单', changelog: '变更日志', browse: '全部项目', methodology: '方法论', pricing: '定价' },
+    pricing: {
+      title: '模型定价',
+      intro:
+        'OpenRouter 上各模型的 token 价格,按输入单价从低到高排 —— 每日记录"智能的价格"如何下降。模型若出现在用量数据里,一并显示其日用量。',
+      tableTitle: '按输入单价最便宜的模型',
+      note: '单位:美元 / 百万 token,由低到高。只列价格有效的模型(排除免费档与无价变体)。有用量则显示日 token。趋势为输入单价随时间变化。',
+      inCol: '输入 $/Mtok',
+      outCol: '输出 $/Mtok',
+      ctxCol: '上下文',
+      priceTrend: '价格趋势',
+    },
     events: {
       title: '变更日志',
       intro: '追踪生态里的关键异动 —— 越过里程碑、发布新版、用量激增。由每日时序自动生成,非人工挑选。',

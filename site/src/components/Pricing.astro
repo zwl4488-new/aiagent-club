@@ -1,0 +1,64 @@
+---
+import Base from '../layouts/Base.astro'
+import RankTable from './RankTable.astro'
+import { modelPricing, seriesByKind } from '../lib/data.mjs'
+import { t } from '../lib/i18n.mjs'
+
+// props: locale
+const { locale = 'en' } = Astro.props
+const s = t(locale)
+const base = locale === 'zh' ? '/zh' : ''
+const path = locale === 'zh' ? '/zh/pricing' : '/pricing'
+const otherPath = locale === 'zh' ? '/pricing' : '/zh/pricing'
+
+// 把时序降采样到 ≤N 点(与首页一致,避免把整段历史打进 HTML)。
+function downsample(points, max = 48) {
+  if (points.length <= max) return points
+  const step = (points.length - 1) / (max - 1)
+  const out = []
+  for (let i = 0; i < max; i++) out.push(points[Math.round(i * step)])
+  return out
+}
+
+const priced = (await modelPricing()).slice(0, 40)
+// 趋势走输入单价历史 —— 直接可视化"token 越来越便宜"。
+const priceSpark = await seriesByKind('openrouter', 'price_prompt_mtok')
+const rows = priced.map((r) => ({ ...r, spark: downsample(priceSpark.get(r.entity_id) ?? []) }))
+
+const columns = [
+  { key: 'price_prompt_mtok', label: s.pricing.inCol, primary: true },
+  { key: 'price_completion_mtok', label: s.pricing.outCol },
+  { key: 'context_length', label: s.pricing.ctxCol },
+  { key: 'or_tokens_day', label: s.tokens },
+]
+
+const title = `${s.pricing.title} | aiagent.club`
+---
+<Base locale={locale} title={title} description={s.pricing.intro} path={path} altEn={locale === 'zh' ? otherPath : path} altZh={locale === 'zh' ? path : otherPath}>
+  <header class="site">
+    <div>
+      <h1><a href={`${base}/`} style="text-decoration:none;color:inherit">aiagent<span class="dot">.</span>club</a></h1>
+      <p class="tagline">{s.pricing.title}</p>
+    </div>
+    <div class="controls">
+      <a class="langlink" href={otherPath} data-astro-prefetch="hover">{s.switchLang}</a>
+    </div>
+  </header>
+
+  <nav class="topnav">
+    <a href={`${base}/`}>{s.nav.rankings}</a>
+    <a href={`${base}/changes`}>{s.nav.changelog}</a>
+    <a href={`${base}/pricing`} aria-current="page">{s.nav.pricing}</a>
+    <a href={`${base}/browse`}>{s.nav.browse}</a>
+    <a href={`${base}/methodology`}>{s.nav.methodology}</a>
+  </nav>
+
+  <p class="intro">{s.pricing.intro}</p>
+
+  {rows.length > 0 && (
+    <RankTable title={s.pricing.tableTitle} note={s.pricing.note} rows={rows} columns={columns} trendLabel={s.pricing.priceTrend} base={base} />
+  )}
+
+  <p class="browse-cta"><a href={`${base}/`}>{s.detail.backHome}</a></p>
+  <footer class="site">{s.footer}</footer>
+</Base>
