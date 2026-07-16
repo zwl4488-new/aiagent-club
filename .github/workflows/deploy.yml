@@ -63,6 +63,12 @@ jobs:
       - name: Pull data.db from R2
         run: node src/r2.mjs pull data.db "$DB_PATH"
 
+      # R2 里的 data.db 是 WAL 日志模式;新鲜 pull 只有主库文件(无 -wal),`sqlite3 -readonly`
+      # 打开会间歇性报 "unable to open database file (14)" → 构建随机失败。归一化成 rollback-journal
+      # 模式(数据不变,WAL 已在写端 close 时并入主库),之后只读打开稳定。修的是长期潜伏的偶发部署失败。
+      - name: Normalize DB journal mode (WAL → rollback, for stable -readonly)
+        run: sqlite3 "$DB_PATH" "PRAGMA journal_mode=DELETE;"
+
       - name: Build site
         # 回填后 data.db 变大(时序更深),给 node 加堆头量,避免构建期 OOM。
         env:
