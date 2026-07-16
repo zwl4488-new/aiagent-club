@@ -202,3 +202,32 @@ footer.site a { color: var(--accent); }
 .browse-list a { color: var(--fg); text-decoration: none; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .browse-list a:hover { color: var(--accent); }
 .browse-list .v { color: var(--fg-soft); font-size: 0.85rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+
+/* ── 顶部导航 ── */
+.topnav { display: flex; gap: 0.35rem; margin: 1.25rem 0 0.5rem; flex-wrap: wrap; }
+.topnav a { font-size: 0.9rem; font-weight: 500; color: var(--fg-soft); text-decoration: none; padding: 0.35rem 0.75rem; border-radius: 999px; border: 1px solid var(--border); }
+.topnav a:hover { color: var(--fg); border-color: var(--fg-soft); }
+.topnav a[aria-current="page"] { color: #fff; background: var(--accent); border-color: var(--accent); }
+
+/* ── 变更日志 / changelog ── */
+.cl-day { margin-top: 1.75rem; }
+.cl-date { font-size: 0.95rem; font-weight: 600; color: var(--fg-soft); font-variant-numeric: tabular-nums; margin: 0 0 0.6rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--border); }
+.cl-list { list-style: none; margin: 0; padding: 0; }
+.cl-item { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; padding: 0.5rem 0.4rem; border-radius: 6px; }
+.cl-item:hover { background: var(--bg-soft); }
+.cl-badge { flex-shrink: 0; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.12rem 0.5rem; border-radius: 999px; border: 1px solid var(--border); color: var(--fg-soft); }
+.cl-milestone .cl-badge { color: #b45309; border-color: #f59e0b55; background: #f59e0b18; }
+.cl-release .cl-badge { color: #4338ca; border-color: #6366f155; background: #6366f118; }
+.cl-surge .cl-badge { color: #047857; border-color: #10b98155; background: #10b98118; }
+.cl-name { color: var(--fg); text-decoration: none; font-weight: 600; }
+.cl-name:hover { color: var(--accent); text-decoration: underline; }
+.cl-pred { color: var(--fg-soft); }
+.cl-kind { margin-left: auto; flex-shrink: 0; color: var(--fg-soft); font-size: 0.8rem; }
+@media (prefers-color-scheme: dark) {
+  .cl-milestone .cl-badge { color: #fbbf24; }
+  .cl-release .cl-badge { color: #a5b4fc; }
+  .cl-surge .cl-badge { color: #6ee7b7; }
+}
+:root[data-theme="dark"] .cl-milestone .cl-badge { color: #fbbf24; }
+:root[data-theme="dark"] .cl-release .cl-badge { color: #a5b4fc; }
+:root[data-theme="dark"] .cl-surge .cl-badge { color: #6ee7b7; }

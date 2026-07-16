@@ -35,6 +35,12 @@ const title = `${s.browseTitle} | aiagent.club`
     </div>
   </header>
 
+  <nav class="topnav">
+    <a href={`${base}/`}>{s.nav.rankings}</a>
+    <a href={`${base}/changes`}>{s.nav.changelog}</a>
+    <a href={`${base}/browse`} aria-current="page">{s.nav.browse}</a>
+  </nav>
+
   <p class="intro">{s.browseIntro}</p>
 
   {groups.map((g) => (

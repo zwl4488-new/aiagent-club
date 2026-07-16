@@ -44,6 +44,17 @@ export const STRINGS = {
     browseAll: (n) => `Browse all ${n} tracked projects →`,
     browseTitle: 'All tracked projects',
     browseIntro: 'Every project aiagent.club tracks, grouped by source. Open any one for its metrics and trend over time.',
+    nav: { rankings: 'Rankings', changelog: 'Changelog', browse: 'Browse' },
+    events: {
+      title: 'Changelog',
+      intro:
+        'Notable moves across the tracked ecosystem — milestones crossed, releases shipped, usage surges. Generated from the daily time series, not hand-picked.',
+      empty: 'No notable events in this window yet — check back as the time series accrues.',
+      typeLabel: { milestone: 'Milestone', release: 'Release', surge: 'Surge' },
+      milestone: (v) => `crossed ${v} stars`,
+      release: (n) => `shipped ${n > 1 ? `${n} new releases` : 'a new release'}`,
+      surge: (pct) => `weekly downloads jumped ${pct}`,
+    },
     kindLabel: {
       github: 'GitHub repo',
       npm: 'npm package',
@@ -134,6 +145,16 @@ export const STRINGS = {
     browseAll: (n) => `浏览全部 ${n} 个追踪项目 →`,
     browseTitle: '全部追踪项目',
     browseIntro: 'aiagent.club 追踪的所有项目,按来源分组。点开任意项目查看其指标与随时间的趋势。',
+    nav: { rankings: '榜单', changelog: '变更日志', browse: '全部项目' },
+    events: {
+      title: '变更日志',
+      intro: '追踪生态里的关键异动 —— 越过里程碑、发布新版、用量激增。由每日时序自动生成,非人工挑选。',
+      empty: '本时段暂无显著事件,数据积累后再来看。',
+      typeLabel: { milestone: '里程碑', release: '发版', surge: '激增' },
+      milestone: (v) => `越过 ${v} star`,
+      release: (n) => `发布了 ${n} 个新版本`,
+      surge: (pct) => `周下载量环比涨 ${pct}`,
+    },
     kindLabel: {
       github: 'GitHub 仓库',
       npm: 'npm 包',

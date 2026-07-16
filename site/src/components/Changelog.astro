@@ -1,0 +1,66 @@
+---
+import Base from '../layouts/Base.astro'
+import { buildEvents, groupByDate } from '../lib/events.mjs'
+import { t } from '../lib/i18n.mjs'
+import { compact, full } from '../lib/format.mjs'
+
+// props: locale
+const { locale = 'en' } = Astro.props
+const s = t(locale)
+const base = locale === 'zh' ? '/zh' : ''
+const path = locale === 'zh' ? '/zh/changes' : '/changes'
+const otherPath = locale === 'zh' ? '/changes' : '/zh/changes'
+
+const events = await buildEvents({ windowDays: 21 })
+const groups = groupByDate(events)
+
+// 一条事件 → 谓语文案(名字单独作链接,故只翻译谓语部分,数据仍用源语言)。
+function predicate(e) {
+  if (e.type === 'milestone') return s.events.milestone(compact(e.value))
+  if (e.type === 'release') return s.events.release(e.count)
+  if (e.type === 'surge') return s.events.surge(`${Math.round(e.pct * 100)}%`)
+  return ''
+}
+
+const title = `${s.events.title} | aiagent.club`
+---
+<Base locale={locale} title={title} description={s.events.intro} path={path} altEn={locale === 'zh' ? otherPath : path} altZh={locale === 'zh' ? path : otherPath}>
+  <header class="site">
+    <div>
+      <h1><a href={`${base}/`} style="text-decoration:none;color:inherit">aiagent<span class="dot">.</span>club</a></h1>
+      <p class="tagline">{s.events.title}</p>
+    </div>
+    <div class="controls">
+      <a class="langlink" href={otherPath} data-astro-prefetch="hover">{s.switchLang}</a>
+    </div>
+  </header>
+
+  <nav class="topnav">
+    <a href={`${base}/`}>{s.nav.rankings}</a>
+    <a href={`${base}/changes`} aria-current="page">{s.nav.changelog}</a>
+    <a href={`${base}/browse`}>{s.nav.browse}</a>
+  </nav>
+
+  <p class="intro">{s.events.intro}</p>
+
+  {groups.length === 0 && <p class="early">{s.events.empty}</p>}
+
+  {groups.map((g) => (
+    <section class="cl-day">
+      <h2 class="cl-date">{g.date}</h2>
+      <ul class="cl-list">
+        {g.items.map((e) => (
+          <li class={`cl-item cl-${e.type}`}>
+            <span class="cl-badge">{s.events.typeLabel[e.type]}</span>
+            <a class="cl-name" href={`${base}/p/${e.slug}`}>{e.name}</a>
+            <span class="cl-pred">{predicate(e)}</span>
+            <span class="cl-kind">{s.kindLabel[e.kind] ?? e.kind}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+
+  <p class="browse-cta"><a href={`${base}/`}>{s.detail.backHome}</a></p>
+  <footer class="site">{s.footer}</footer>
+</Base>

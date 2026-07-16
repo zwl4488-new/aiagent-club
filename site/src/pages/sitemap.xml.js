@@ -5,7 +5,7 @@ const SITE = 'https://www.aiagent.club'
 
 export async function GET() {
   const pages = await buildEntityPages()
-  const urls = ['/', '/zh/', '/browse', '/zh/browse']
+  const urls = ['/', '/zh/', '/changes', '/zh/changes', '/browse', '/zh/browse']
   for (const p of pages) {
     urls.push(`/p/${p.slug}`)
     urls.push(`/zh/p/${p.slug}`)
