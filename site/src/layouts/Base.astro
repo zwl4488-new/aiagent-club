@@ -3,8 +3,33 @@ import '../styles/global.css'
 import { ClientRouter } from 'astro:transitions'
 // props: locale ('en'|'zh'), title, description, path (当前页路径)
 //        altEn / altZh: 本页的英文 / 中文对应路径(hreflang 互指)。默认首页。
-const { locale = 'en', title, description, path = '/', altEn = '/', altZh = '/zh/' } = Astro.props
+//        jsonld: 本页额外的 schema.org 节点(对象或数组),并入站点 @graph。
+const { locale = 'en', title, description, path = '/', altEn = '/', altZh = '/zh/', jsonld = null } = Astro.props
 const SITE = 'https://www.aiagent.club'
+
+// 站点级结构化数据:WebSite + Organization,每页都带;详情页等再追加自己的节点(如 Dataset)。
+const orgId = `${SITE}/#org`
+const baseGraph = [
+  {
+    '@type': 'WebSite',
+    '@id': `${SITE}/#website`,
+    url: SITE,
+    name: 'aiagent.club',
+    description:
+      locale === 'zh'
+        ? 'AI agent 生态的每日时序数据仪器:热度 vs 真实使用、动量信号。'
+        : 'A daily time-series instrument for the AI agent ecosystem: hype vs. real usage, and momentum.',
+    inLanguage: locale === 'zh' ? 'zh-CN' : 'en',
+    publisher: { '@id': orgId },
+  },
+  { '@type': 'Organization', '@id': orgId, name: 'aiagent.club', url: SITE },
+]
+const graph = jsonld ? [...baseGraph, ...(Array.isArray(jsonld) ? jsonld : [jsonld])] : baseGraph
+// 转义 <>& 为 unicode:防止数据里(如简介)含 </script> 冲破内联脚本。
+const jsonLdText = JSON.stringify({ '@context': 'https://schema.org', '@graph': graph })
+  .replace(/</g, '\\u003c')
+  .replace(/>/g, '\\u003e')
+  .replace(/&/g, '\\u0026')
 ---
 <!doctype html>
 <html lang={locale}>
@@ -19,6 +44,8 @@ const SITE = 'https://www.aiagent.club'
     <link rel="alternate" hreflang="zh" href={SITE + altZh} />
     <link rel="alternate" hreflang="x-default" href={SITE + altEn} />
     <meta name="theme-color" content="#6366f1" />
+    <!-- 结构化数据:站点(WebSite/Organization)+ 本页节点(如详情页的 Dataset)。 -->
+    <script type="application/ld+json" is:inline set:html={jsonLdText} />
     <!-- 主题在首帧前就应用,避免刷新时亮/暗闪烁(FOUC)。 -->
     <script is:inline>
       const saved = localStorage.getItem('theme')

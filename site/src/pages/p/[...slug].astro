@@ -20,7 +20,21 @@ const title = `${entity.name} — ${kindLabel} | aiagent.club`
 const description = entity.description
   ? s.detail.metaDescReal(entity.name, entity.description, stat)
   : s.detail.metaDesc(entity.name, kindLabel, stat)
+
+// 结构化数据:本页是"某项目指标随时间"的数据集。github 再挂 SoftwareSourceCode。
+const SITE = 'https://www.aiagent.club'
+const jsonld = {
+  '@type': 'Dataset',
+  name: `${entity.name} — metrics over time`,
+  description,
+  url: SITE + path,
+  isAccessibleForFree: true,
+  creator: { '@id': `${SITE}/#org` },
+  keywords: [kindLabel, 'AI agent', entity.category].filter(Boolean),
+  variableMeasured: Object.keys(entity.metrics).map((m) => s.metricLabel[m] ?? m),
+  ...(entity.kind === 'github' && entity.url ? { about: { '@type': 'SoftwareSourceCode', name: entity.name, codeRepository: entity.url } } : {}),
+}
 ---
-<Base locale="en" title={title} description={description} path={path} altEn={path} altZh={`/zh/p/${entity.slug}`}>
+<Base locale="en" title={title} description={description} path={path} altEn={path} altZh={`/zh/p/${entity.slug}`} jsonld={jsonld}>
   <EntityDetail entity={entity} s={s} base="" />
 </Base>

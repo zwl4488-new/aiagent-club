@@ -231,3 +231,12 @@ footer.site a { color: var(--accent); }
 :root[data-theme="dark"] .cl-milestone .cl-badge { color: #fbbf24; }
 :root[data-theme="dark"] .cl-release .cl-badge { color: #a5b4fc; }
 :root[data-theme="dark"] .cl-surge .cl-badge { color: #6ee7b7; }
+
+/* ── 长文 / methodology ── */
+.prose { max-width: 68ch; margin: 1.25rem 0; }
+.prose .lead { font-size: 1.12rem; font-weight: 500; line-height: 1.55; color: var(--fg); margin: 0 0 0.5rem; }
+.prose section { margin-top: 2rem; }
+.prose h2 { font-size: 1.15rem; margin: 0 0 0.6rem; }
+.prose p { line-height: 1.7; color: var(--fg); margin: 0 0 0.9rem; }
+.prose ul { margin: 0 0 0.9rem; padding-left: 1.2rem; }
+.prose li { line-height: 1.65; color: var(--fg); margin: 0.3rem 0; }
