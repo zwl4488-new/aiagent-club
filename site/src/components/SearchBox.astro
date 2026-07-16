@@ -1,0 +1,8 @@
+---
+// 全站头部搜索框。零 JS:一个 GET 表单,回车即跳到 /search?q=... ,由搜索页做即时过滤。
+// 好处:其它页面不必加载搜索索引(保持轻量),只有落到 /search 才拉索引。
+const { base = '', placeholder = 'Search…', label = 'Search' } = Astro.props
+---
+<form class="hsearch" role="search" action={`${base}/search`} method="get">
+  <input type="search" name="q" placeholder={placeholder} aria-label={label} autocomplete="off" spellcheck="false" />
+</form>

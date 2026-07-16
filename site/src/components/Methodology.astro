@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro'
+import SearchBox from './SearchBox.astro'
 import { t } from '../lib/i18n.mjs'
 
 // props: locale
@@ -159,6 +160,7 @@ const title = `${c.title} | aiagent.club`
       <p class="tagline">{c.title}</p>
     </div>
     <div class="controls">
+      <SearchBox base={base} placeholder={s.search.placeholder} label={s.search.title} />
       <a class="langlink" href={otherPath} data-astro-prefetch="hover">{s.switchLang}</a>
     </div>
   </header>

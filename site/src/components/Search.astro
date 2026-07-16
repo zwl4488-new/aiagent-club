@@ -39,101 +39,81 @@ const title = `${s.search.title} | aiagent.club`
   <p class="browse-cta"><a href={`${base}/`}>{s.detail.backHome}</a></p>
   <footer class="site">{s.footer}</footer>
 
-  <script is:inline define:vars={{ base, kinds: s.kindLabel, tx: { hint: s.search.hint, empty: s.search.empty, results: s.search.results } }}>
-    // 纯静态站的客户端搜索:拉一次 /search.json(源语言数据),在浏览器里按名称/简介过滤 + 排序。
+  <script is:inline define:vars={{ base, kinds: s.kindLabel, tx: { hint: s.search.hint, empty: s.search.empty, results: s.search.results, showing: s.search.showing } }}>
+    // 纯静态站的客户端搜索:拉一次 /search.json,浏览器里过滤排序。
+    // 关键:ClientRouter(SPA 导航)下内联脚本只在首次出现时执行一次,切走再切回本页不会重跑,
+    // 新换进来的 #q 会丢失监听 → 搜索失效。解法:把绑定放进 astro:page-load(每次导航都触发),
+    // 索引与上次查询缓存在 window 上跨导航复用。
     ;(function () {
-      const input = document.getElementById('q')
-      const meta = document.getElementById('search-meta')
-      const list = document.getElementById('search-results')
-      if (!input || !list) return
-      let DATA = null
-      let loading = false
+      const store = (window.__aiacSearch = window.__aiacSearch || { data: null, bound: false, lastQ: '' })
+      const LIMIT = 200
 
-      const detailHref = (slug) => `${base}/p/${slug}`
-
-      function render(items, q) {
-        list.textContent = ''
-        if (!q) { meta.textContent = tx.hint; return }
-        if (!items.length) { meta.textContent = tx.empty; return }
-        meta.textContent = items.length + ' ' + tx.results
-        const frag = document.createDocumentFragment()
-        for (const it of items) {
-          const li = document.createElement('li')
-          const a = document.createElement('a')
-          a.href = detailHref(it.s)
-          a.className = 'sr-item'
-          const badge = document.createElement('span')
-          badge.className = 'sr-kind'
-          badge.textContent = kinds[it.k] || it.k
-          const name = document.createElement('span')
-          name.className = 'sr-name'
-          name.textContent = it.n
-          a.appendChild(badge)
-          a.appendChild(name)
-          if (it.d) {
-            const d = document.createElement('span')
-            d.className = 'sr-desc'
-            d.textContent = it.d
-            a.appendChild(d)
-          }
-          li.appendChild(a)
-          frag.appendChild(li)
-        }
-        list.appendChild(frag)
+      async function ensureData() {
+        if (store.data) return store.data
+        try { store.data = await (await fetch('/search.json')).json() } catch (e) { store.data = [] }
+        return store.data
       }
 
       function score(it, q) {
-        const n = it.n.toLowerCase()
-        const d = (it.d || '').toLowerCase()
+        const n = it.n.toLowerCase(), d = (it.d || '').toLowerCase()
         let sc = 0
         if (n === q) sc = 1000
         else if (n.startsWith(q)) sc = 200
         else if (n.includes(q)) sc = 100
         else if (d.includes(q)) sc = 20
         else return 0
-        // 同分下大项目靠前(log 缩放,避免体量完全压过相关性)
-        return sc + Math.log10((it.v || 0) + 10)
+        return sc + Math.log10((it.v || 0) + 10) // 同分按项目体量,log 缩放不压过相关性
       }
 
-      function search(raw) {
-        const q = raw.trim().toLowerCase()
-        if (!DATA || !q) { render([], q); return }
-        const hits = []
-        for (const it of DATA) {
-          const sc = score(it, q)
-          if (sc > 0) hits.push([sc, it])
+      function initSearch() {
+        const input = document.getElementById('q')
+        const meta = document.getElementById('search-meta')
+        const list = document.getElementById('search-results')
+        if (!input || !list || input.dataset.bound) return
+        input.dataset.bound = '1'
+
+        function render(items, q, total) {
+          list.textContent = ''
+          if (!q) { meta.textContent = tx.hint; return }
+          if (!total) { meta.textContent = tx.empty; return }
+          meta.textContent = total + ' ' + tx.results + (total > items.length ? ' · ' + tx.showing.replace('%d', items.length) : '')
+          const frag = document.createDocumentFragment()
+          for (const it of items) {
+            const li = document.createElement('li')
+            const a = document.createElement('a'); a.href = base + '/p/' + it.s; a.className = 'sr-item'
+            const badge = document.createElement('span'); badge.className = 'sr-kind'; badge.textContent = kinds[it.k] || it.k
+            const name = document.createElement('span'); name.className = 'sr-name'; name.textContent = it.n
+            a.appendChild(badge); a.appendChild(name)
+            if (it.d) { const d = document.createElement('span'); d.className = 'sr-desc'; d.textContent = it.d; a.appendChild(d) }
+            li.appendChild(a); frag.appendChild(li)
+          }
+          list.appendChild(frag)
         }
-        hits.sort((a, b) => b[0] - a[0])
-        render(hits.slice(0, 60).map((h) => h[1]), q)
-      }
 
-      async function ensureData() {
-        if (DATA || loading) return
-        loading = true
-        try {
-          const res = await fetch('/search.json')
-          DATA = await res.json()
-        } catch (e) {
-          meta.textContent = '⚠︎ index failed to load'
+        async function run() {
+          store.lastQ = input.value
+          const q = input.value.trim().toLowerCase()
+          if (!q) { render([], '', 0); return }
+          const data = await ensureData()
+          const hits = []
+          for (const it of data) { const sc = score(it, q); if (sc > 0) hits.push([sc, it]) }
+          hits.sort((a, b) => b[0] - a[0])
+          render(hits.slice(0, LIMIT).map((h) => h[1]), q, hits.length)
         }
-        loading = false
+
+        input.addEventListener('input', run)
+        // ?q= 深链,或返回本页时恢复上次查询
+        const q0 = new URLSearchParams(location.search).get('q') || store.lastQ || ''
+        if (q0) input.value = q0
+        meta.textContent = tx.hint
+        ensureData()
+        if (input.value.trim()) run()
+        try { input.focus() } catch (e) {}
       }
 
-      async function onInput() {
-        await ensureData()
-        search(input.value)
-      }
-
-      input.addEventListener('input', onInput)
-      // 支持 ?q= 深链:进页面即带出结果。
-      const params = new URLSearchParams(location.search)
-      const q0 = params.get('q')
-      if (q0) { input.value = q0 }
-      meta.textContent = tx.hint
-      // 预取索引(聚焦或已有 q 时),让首次输入即时。
-      input.addEventListener('focus', ensureData, { once: true })
-      if (q0) onInput()
-      input.focus()
+      // 监听只注册一次(document 在 SPA 里不销毁,监听跨导航持续),之后每次导航到本页都重新绑定。
+      if (!store.bound) { store.bound = true; document.addEventListener('astro:page-load', initSearch) }
+      initSearch()
     })()
   </script>
 </Base>

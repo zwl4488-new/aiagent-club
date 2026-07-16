@@ -51,6 +51,7 @@ export const STRINGS = {
       hint: 'Search all tracked projects by name or description.',
       empty: 'No matches.',
       results: 'results',
+      showing: 'showing top %d',
     },
     pricing: {
       title: 'Model pricing',
@@ -172,6 +173,7 @@ export const STRINGS = {
       hint: '按名称或简介搜索全部追踪项目。',
       empty: '没有匹配。',
       results: '个结果',
+      showing: '显示前 %d 条',
     },
     pricing: {
       title: '模型定价',

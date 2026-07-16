@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro'
+import SearchBox from './SearchBox.astro'
 import RankTable from './RankTable.astro'
 import { modelPricing, seriesByKind } from '../lib/data.mjs'
 import { t } from '../lib/i18n.mjs'
@@ -41,6 +42,7 @@ const title = `${s.pricing.title} | aiagent.club`
       <p class="tagline">{s.pricing.title}</p>
     </div>
     <div class="controls">
+      <SearchBox base={base} placeholder={s.search.placeholder} label={s.search.title} />
       <a class="langlink" href={otherPath} data-astro-prefetch="hover">{s.switchLang}</a>
     </div>
   </header>

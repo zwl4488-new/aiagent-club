@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro'
+import SearchBox from './SearchBox.astro'
 import { buildEntityPages, PRIMARY } from '../lib/detail.mjs'
 import { t } from '../lib/i18n.mjs'
 import { compact } from '../lib/format.mjs'
@@ -31,6 +32,7 @@ const title = `${s.browseTitle} | aiagent.club`
       <p class="tagline">{s.browseTitle}</p>
     </div>
     <div class="controls">
+      <SearchBox base={base} placeholder={s.search.placeholder} label={s.search.title} />
       <a class="langlink" href={otherPath} data-astro-prefetch="hover">{s.switchLang}</a>
     </div>
   </header>
