@@ -151,9 +151,15 @@ async function backfillGithubCommits({ repos, token, writer, log, dbPath }) {
     } else todo.push(repo)
   }
   const meta = new Map()
-  for (const batch of chunk(todo, 100)) {
-    const { results } = await fetchRepoBatch(batch, token)
-    for (const r of results) meta.set(r.repo, r.meta.createdAt)
+  // fetchRepoBatch 带 history{totalCount} 很重,100 个一批会 504 —— 与日采集器同理用 20。
+  for (const batch of chunk(todo, 20)) {
+    // 瞬时错误(502/504/超时)不掀翻整个回填:跳过本批,repo 未回填,下次运行补(幂等可续)。
+    try {
+      const { results } = await fetchRepoBatch(batch, token)
+      for (const r of results) meta.set(r.repo, r.meta.createdAt)
+    } catch (e) {
+      log(`  commits: 批量取 createdAt 失败(${batch.length} repo),跳过本批,下次补:${e instanceof Error ? e.message : e}`)
+    }
   }
   for (const repo of todo) {
     const created = meta.get(repo)
@@ -161,6 +167,7 @@ async function backfillGithubCommits({ repos, token, writer, log, dbPath }) {
       log(`  github ${repo}: 无 createdAt,跳过 commits`)
       continue
     }
+    try {
     const [owner, name] = [repo.slice(0, repo.indexOf('/')), repo.slice(repo.indexOf('/') + 1)]
     const since = isoDateTime(dayStart(created))
     // 生成每周的 until 边界。
@@ -192,6 +199,9 @@ async function backfillGithubCommits({ repos, token, writer, log, dbPath }) {
     }
     await writer.flush()
     log(`  github ${repo} commits: +${repoWritten} 周`)
+    } catch (e) {
+      log(`  github ${repo} commits: 失败跳过,下次补:${e instanceof Error ? e.message : e}`)
+    }
   }
   return written
 }
@@ -211,6 +221,7 @@ async function backfillGithubCumulative({ repos, token, metric, writer, log, dbP
       log(`  github ${repo} ${metric}: 已有历史,跳过`)
       continue
     }
+    try {
     const [owner, name] = [repo.slice(0, repo.indexOf('/')), repo.slice(repo.indexOf('/') + 1)]
     /** @type {Map<string, number>} */
     const dayCount = new Map()
@@ -247,6 +258,9 @@ async function backfillGithubCumulative({ repos, token, metric, writer, log, dbP
     }
     await writer.flush()
     log(`  github ${repo} ${metric}: 累计 ${run},${days.length} 个活跃日,${pages} 页`)
+    } catch (e) {
+      log(`  github ${repo} ${metric}: 失败跳过,下次补:${e instanceof Error ? e.message : e}`)
+    }
   }
   return written
 }
