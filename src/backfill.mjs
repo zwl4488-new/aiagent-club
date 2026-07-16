@@ -70,6 +70,7 @@ async function backfillNpmDaily({ packages, writer, log, dbPath }) {
       log(`  npm ${pkg}: 已有历史,跳过`)
       continue
     }
+    try {
     if (written > 0) await sleep(500) // 温和,避免 npm downloads API 429
     let end = dayStart(isoDay(new Date())) // 今天 UTC
     let pkgDays = 0
@@ -104,6 +105,9 @@ async function backfillNpmDaily({ packages, writer, log, dbPath }) {
     writer.upsertEntity({ entity_id, kind: 'npm', ecosystem: 'global', name: pkg, url: `https://www.npmjs.com/package/${pkg}`, active: 1 })
     await writer.flush()
     log(`  npm ${pkg}: +${pkgDays} 天`)
+    } catch (e) {
+      log(`  npm ${pkg}: 失败跳过(限速/网络?),下次补:${e instanceof Error ? e.message : e}`)
+    }
   }
   return written
 }
@@ -117,6 +121,7 @@ async function backfillPypiDaily({ packages, writer, log, dbPath }) {
       log(`  pypi ${pkg}: 已有历史,跳过`)
       continue
     }
+    try {
     const res = await fetchRetry(`https://pypistats.org/api/packages/${encodeURIComponent(pkg)}/overall`, {
       notFoundOk: true,
       headers: { 'user-agent': UA },
@@ -135,6 +140,9 @@ async function backfillPypiDaily({ packages, writer, log, dbPath }) {
     await writer.flush()
     log(`  pypi ${pkg}: +${rows.length} 天`)
     await sleep(300) // 志愿者服务,温和
+    } catch (e) {
+      log(`  pypi ${pkg}: 失败跳过(限速/网络?),下次补:${e instanceof Error ? e.message : e}`)
+    }
   }
   return written
 }
