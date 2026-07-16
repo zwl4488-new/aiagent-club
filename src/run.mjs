@@ -46,6 +46,7 @@ async function ensureSchema(dbPath) {
   // 迁移:CREATE TABLE IF NOT EXISTS 不会给已存在的表补列。R2 上的旧库建于加 description 之前,
   // 故显式补列(SQLite 无 ADD COLUMN IF NOT EXISTS,先查 pragma 再决定,避免"duplicate column"报错)。
   await addColumnIfMissing(dbPath, 'entities', 'description', 'TEXT')
+  await addColumnIfMissing(dbPath, 'entities', 'intro', 'TEXT')
 }
 
 /**

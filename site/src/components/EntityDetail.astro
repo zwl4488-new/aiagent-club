@@ -47,7 +47,16 @@ const lastUpdated = entity.primaryMetric ? entity.metrics[entity.primaryMetric]?
   )}
 
   {entity.description && <p class="lead">{entity.description}</p>}
-  <p class="whatis">{s.detail.whatIs(entity.name, kindLabel)}</p>
+
+  {entity.intro ? (
+    <section class="about">
+      <h2>{s.detail.about}</h2>
+      {entity.intro.split('\n\n').map((para) => <p>{para}</p>)}
+      {entity.url && <p class="about-src">{s.detail.introSource} <a href={entity.url} target="_blank" rel="noopener">{entity.url.replace(/^https?:\/\//, '')}</a></p>}
+    </section>
+  ) : (
+    <p class="whatis">{s.detail.whatIs(entity.name, kindLabel)}</p>
+  )}
 
   {showKeys.length > 0 && (
     <section class="detail-metrics">

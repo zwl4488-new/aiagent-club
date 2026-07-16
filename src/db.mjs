@@ -138,6 +138,15 @@ export function createWriter(dbPath) {
       )
     },
 
+    /**
+     * 只更新某实体的 intro(项目介绍摘录),不动其它列。实体不存在则无操作(intro 无处可挂)。
+     * @param {string} entity_id
+     * @param {string} intro
+     */
+    setIntro(entity_id, intro) {
+      stmts.push(`UPDATE entities SET intro=${sqlText(intro)} WHERE entity_id=${sqlText(entity_id)};`)
+    },
+
     /** @param {MetricRow} m */
     upsertMetric(m) {
       // metrics 的 UNIQUE...ON CONFLICT REPLACE 由 schema 保证 → 直接 INSERT,冲突自动替换当天值。

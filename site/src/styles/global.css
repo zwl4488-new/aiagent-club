@@ -240,3 +240,11 @@ footer.site a { color: var(--accent); }
 .prose p { line-height: 1.7; color: var(--fg); margin: 0 0 0.9rem; }
 .prose ul { margin: 0 0 0.9rem; padding-left: 1.2rem; }
 .prose li { line-height: 1.65; color: var(--fg); margin: 0.3rem 0; }
+
+/* ── 项目介绍 / about ── */
+.about { margin: 1.5rem 0; max-width: 68ch; }
+.about h2 { font-size: 1.05rem; margin: 0 0 0.6rem; }
+.about p { color: var(--fg); line-height: 1.7; margin: 0 0 0.8rem; }
+.about .about-src { color: var(--fg-soft); font-size: 0.85rem; margin-top: 0.2rem; }
+.about .about-src a { color: var(--accent); text-decoration: none; }
+.about .about-src a:hover { text-decoration: underline; }

@@ -150,7 +150,8 @@ async function hasColumn(table, column) {
 /** 全部实体(用于逐项目 SEO 详情页 getStaticPaths)。 */
 export async function allEntities() {
   const desc = (await hasColumn('entities', 'description')) ? 'description' : `NULL AS description`
-  return query(`SELECT entity_id, kind, name, url, category, ${desc}, first_seen FROM entities ORDER BY kind, name`)
+  const intro = (await hasColumn('entities', 'intro')) ? 'intro' : `NULL AS intro`
+  return query(`SELECT entity_id, kind, name, url, category, ${desc}, ${intro}, first_seen FROM entities ORDER BY kind, name`)
 }
 
 /**
