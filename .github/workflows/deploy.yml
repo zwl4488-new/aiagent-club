@@ -10,6 +10,10 @@
 #   CLOUDFLARE_PAGES_PROJECT_NAME  —— Pages 项目名(如 aiagent-club-www)
 #   ALIYUN_ACCESSKEY_ID  ALIYUN_ACCESSKEY_SECRET  ALIYUN_OSS_ENDPOINT  ALIYUN_OSS_BUCKET
 # CLOUDFLARE_ACCOUNT_ID 复用 R2_ACCOUNT_ID(同一账号),无需另加。
+#
+# ⚠️ CDN 刷新:OSS 上传只更新源站,CDN 边缘还是旧缓存 → 部署末尾调 RefreshObjectCaches 刷新。
+#   用的是同一对 ALIYUN_ACCESSKEY,该 AK 需要 CDN 刷新权限(RAM 授权 AliyunCDNFullAccess,
+#   或自定义策略含 cdn:RefreshObjectCaches)。只有 OSS 权限会 403。
 
 name: deploy
 
@@ -87,3 +91,18 @@ jobs:
           # -r 递归、-f 覆盖同名。dist/ 内容整体上传到 bucket 根。实体集只增不减,孤儿对象极少,
           # 暂不做 --delete 清理(ossutil 1.7 cp 不支持);需要时再单独跑一次清理。
           /tmp/ossutil cp -r -f site/dist/ "oss://$OSS_BUCKET/"
+
+      # OSS 只是源站,CDN 边缘缓存要显式刷新,否则境内用户仍看旧页。
+      # Directory 刷新:按根目录一次性刷新整站(下次请求回源取最新);www 与 apex 两个加速域名都刷。
+      # 刷新是异步任务,提交后边缘按队列清缓存(通常秒~分钟级);目录刷新有每日配额(默认足够两次/天部署)。
+      - name: Refresh Aliyun CDN cache
+        env:
+          ALI_ID: ${{ secrets.ALIYUN_ACCESSKEY_ID }}
+          ALI_SECRET: ${{ secrets.ALIYUN_ACCESSKEY_SECRET }}
+        run: |
+          curl -sSL https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz -o /tmp/aliyun.tgz
+          tar -xzf /tmp/aliyun.tgz -C /tmp
+          /tmp/aliyun cdn RefreshObjectCaches \
+            --mode AK --access-key-id "$ALI_ID" --access-key-secret "$ALI_SECRET" --region cn-hangzhou \
+            --ObjectType Directory \
+            --ObjectPath "$(printf 'https://www.aiagent.club/\nhttps://aiagent.club/')"
