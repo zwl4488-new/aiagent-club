@@ -120,6 +120,19 @@ export async function push(key, localPath, cfg = loadR2Config()) {
 }
 
 /**
+ * 删除对象(404 视为已删,幂等)。
+ * @param {string} key
+ * @param {ReturnType<typeof loadR2Config>} [cfg]
+ * @returns {Promise<boolean>}  是否发出了删除(true=删除/本就不存在)
+ */
+export async function del(key, cfg = loadR2Config()) {
+  const res = await request('DELETE', key, undefined, cfg)
+  if (res.status === 404) return true
+  if (!res.ok && res.status !== 204) throw new Error(`R2 del ${key}: HTTP ${res.status} ${(await res.text()).slice(0, 300)}`)
+  return true
+}
+
+/**
  * HEAD:返回 { exists, size }。
  * @param {string} key
  * @param {ReturnType<typeof loadR2Config>} [cfg]
@@ -150,8 +163,12 @@ if (isMain) {
       if (!key) throw new Error('用法: r2.mjs head <key>')
       const h = await head(key)
       console.log(h.exists ? `${key} 存在,${h.size} bytes` : `${key} 不存在`)
+    } else if (cmd === 'del') {
+      if (!key) throw new Error('用法: r2.mjs del <key>')
+      await del(key)
+      console.log(`deleted ${key}`)
     } else {
-      throw new Error(`未知命令: ${cmd}(pull|push|head)`)
+      throw new Error(`未知命令: ${cmd}(pull|push|head|del)`)
     }
   }
   run().catch((e) => {
