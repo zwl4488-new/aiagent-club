@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { cleanReadmeIntro } from '../src/enrich.mjs'
+import { cleanReadmeIntro, stripHfFrontmatter } from '../src/enrich.mjs'
 
 test('cleanReadmeIntro: 剥掉徽章/图片/HTML/标题,留 prose', () => {
   const md = [
@@ -47,4 +47,16 @@ test('cleanReadmeIntro: 无 prose / 空 → null', () => {
   assert.equal(cleanReadmeIntro(''), null)
   assert.equal(cleanReadmeIntro(null), null)
   assert.equal(cleanReadmeIntro('# Title\n\n![img](x.png)\n\n```\ncode\n```'), null)
+})
+
+test('stripHfFrontmatter: 剥掉 HF 模型卡的 YAML frontmatter', () => {
+  const card = '---\nlicense: apache-2.0\ntags:\n- text-generation\n---\n# Llama 3\n\nLlama 3 is a family of open large language models by Meta for chat and agents.'
+  const body = stripHfFrontmatter(card)
+  assert.ok(!body.includes('license:'), 'frontmatter removed')
+  assert.ok(body.startsWith('# Llama 3'))
+  const intro = cleanReadmeIntro(body)
+  assert.ok(intro.startsWith('Llama 3 is a family of open large language models'), intro)
+  // 无 frontmatter 时原样返回
+  assert.equal(stripHfFrontmatter('# No frontmatter\n\ntext'), '# No frontmatter\n\ntext')
+  assert.equal(stripHfFrontmatter(''), '')
 })

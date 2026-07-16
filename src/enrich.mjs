@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { runSqlite, createWriter, query } from './db.mjs'
 import { fetchRetry, sleep } from './fetch/client.mjs'
-import { GITHUB_REPOS, NPM_PACKAGES, PYPI_PACKAGES } from './entities.mjs'
+import { GITHUB_REPOS, NPM_PACKAGES, PYPI_PACKAGES, HF_MODELS } from './entities.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const UA = 'aiagent-club'
@@ -145,6 +145,20 @@ async function fetchPypiLongDesc(pkg) {
   return typeof j.info?.description === 'string' ? j.info.description : null
 }
 
+/** 剥掉 HuggingFace 模型卡开头的 YAML frontmatter(--- … ---),只留正文 markdown。 */
+export function stripHfFrontmatter(md) {
+  if (!md || typeof md !== 'string') return md
+  const m = md.match(/^\s*---\r?\n[\s\S]*?\r?\n---\r?\n?/)
+  return m ? md.slice(m[0].length) : md
+}
+
+async function fetchHuggingFaceReadme(id) {
+  // 模型卡原文在 raw 端点;开头常带 YAML frontmatter,先剥掉再清洗。
+  const res = await fetchRetry(`https://huggingface.co/${id}/raw/main/README.md`, { notFoundOk: true, retries: 2, headers: { 'user-agent': UA } })
+  if (res.status === 404) return null
+  return stripHfFrontmatter(await res.text())
+}
+
 /**
  * 通用富集循环:逐项取原文 → 清洗 → 存 intro。容错、幂等、间隔温和。
  * @param {object} p
@@ -180,7 +194,7 @@ async function main() {
   const args = process.argv.slice(2)
   const refresh = args.includes('--refresh')
   const kinds = args.filter((a) => !a.startsWith('--'))
-  const want = kinds.length ? kinds : ['github', 'npm', 'pypi']
+  const want = kinds.length ? kinds : ['github', 'npm', 'pypi', 'huggingface']
   const log = (m) => console.log(`[${new Date().toISOString()}] ${m}`)
   log(`enrich start: db=${dbPath} kinds=${want.join(',')} refresh=${refresh}`)
   await ensureSchema(dbPath)
@@ -227,6 +241,20 @@ async function main() {
       log,
       refresh,
       gapMs: PYPI_GAP_MS,
+    })
+  }
+  if (want.includes('huggingface')) {
+    log('── huggingface intro ──')
+    await enrichKind({
+      kind: 'huggingface',
+      ids: HF_MODELS,
+      entityId: (id) => `huggingface:${id}`,
+      fetchRaw: (id) => fetchHuggingFaceReadme(id),
+      writer,
+      dbPath,
+      log,
+      refresh,
+      gapMs: GH_GAP_MS,
     })
   }
   await writer.flush()
