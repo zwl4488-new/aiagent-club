@@ -11,15 +11,7 @@ const otherPath = locale === 'zh' ? '/search' : '/zh/search'
 const title = `${s.search.title} | aiagent.club`
 ---
 <Base locale={locale} title={title} description={s.search.hint} path={path} altEn={locale === 'zh' ? otherPath : path} altZh={locale === 'zh' ? path : otherPath}>
-  <header class="site">
-    <div>
-      <h1><a href={`${base}/`} style="text-decoration:none;color:inherit">aiagent<span class="dot">.</span>club</a></h1>
-      <p class="tagline">{s.search.title}</p>
-    </div>
-    <div class="controls">
-      <a class="langlink" href={otherPath} data-astro-prefetch="hover">{s.switchLang}</a>
-    </div>
-  </header>
+  <h1 class="page-title">{s.search.title}</h1>
 
   <nav class="topnav">
     <a href={`${base}/`}>{s.nav.rankings}</a>

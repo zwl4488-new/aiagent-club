@@ -1,0 +1,39 @@
+---
+import { compact, full } from '../lib/format.mjs'
+// props: title, note, rows(buildProjects 的前 N 条), s, base, moreHref, moreLabel
+const { title, note, rows = [], s, base = '', moreHref, moreLabel } = Astro.props
+const KIND = { github: 'GH', npm: 'npm', pypi: 'PyPI', huggingface: 'HF', openrouter: 'OR', modelscope: 'MS', vscode: 'VSC' }
+const detailHref = (slug) => `${base}/project/${slug}`
+---
+<section class="index">
+  <div class="index-head">
+    <h2>{title}</h2>
+    <p class="note">{note}</p>
+  </div>
+  <ol class="index-list">
+    {rows.map((p, i) => (
+      <li class="idx-row">
+        <span class="idx-rank">{i + 1}</span>
+        <div class="idx-main">
+          <div class="idx-title">
+            <a class="idx-name" href={detailHref(p.slug)}>{p.name}</a>
+            <span class="idx-src">
+              {p.kinds.filter((k) => KIND[k]).map((k) => <span class="idx-badge">{KIND[k]}</span>)}
+            </span>
+          </div>
+          {p.description && <p class="idx-desc">{p.description}</p>}
+          <p class="idx-stats">
+            {p.usage > 0 && <span title={full(Math.round(p.usage))}><b>{compact(p.usage)}</b> {s.index.usage}</span>}
+            {p.stars > 0 && <span title={full(p.stars)}><b>{compact(p.stars)}</b> ★</span>}
+            {p.momentum > 0 && <span class="up" title={full(p.momentum)}>▲ {compact(p.momentum)} {s.index.perWk}</span>}
+          </p>
+        </div>
+        <div class="idx-score" title={s.index.breakdown(p.usagePct, p.momPct, p.attnPct)}>
+          <div class="idx-bar"><i style={`width:${p.score}%`}></i></div>
+          <b class="idx-num">{p.score}</b>
+        </div>
+      </li>
+    ))}
+  </ol>
+  {moreHref && <p class="rank-more"><a href={moreHref}>{moreLabel}</a></p>}
+</section>

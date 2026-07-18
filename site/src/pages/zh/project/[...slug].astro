@@ -1,0 +1,21 @@
+---
+import Base from '../../../layouts/Base.astro'
+import ProjectDetail from '../../../components/ProjectDetail.astro'
+import { buildProjectPages } from '../../../lib/projects.mjs'
+import { t } from '../../../lib/i18n.mjs'
+import { compact } from '../../../lib/format.mjs'
+
+export async function getStaticPaths() {
+  const projects = await buildProjectPages()
+  return projects.map((project) => ({ params: { slug: project.slug }, props: { project } }))
+}
+
+const { project } = Astro.props
+const s = t('zh')
+const path = `/zh/project/${project.slug}`
+const title = `${project.name} — AI Agent 指数 | aiagent.club`
+const description = project.intro ? `${project.name}:${project.intro.slice(0, 140)}` : `${project.name} —— AI Agent 指数综合分 ${project.score}。合并 GitHub + 软件包 + 模型的多源指标,aiagent.club 每日追踪。`
+---
+<Base locale="zh" title={title} description={description} path={path} altEn={`/project/${project.slug}`} altZh={path}>
+  <ProjectDetail project={project} s={s} base="/zh" />
+</Base>

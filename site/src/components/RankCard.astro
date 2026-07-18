@@ -1,0 +1,25 @@
+---
+import Sparkline from './Sparkline.astro'
+// 紧凑排名卡:标题 + 前 N 行(名次·名称·折线图·值),可选更多链接/强调色。
+// props: title, note?, rows[{name,href,value,title?,spark?[]}], moreHref?, moreLabel?, accent?
+const { title, note, rows = [], moreHref, moreLabel, accent } = Astro.props
+---
+<section class="rcard" style={accent ? `--card-accent: ${accent}` : undefined}>
+  <div class="rcard-head">
+    <h3>{title}</h3>
+    {moreHref && <a class="rcard-more" href={moreHref}>{moreLabel}</a>}
+  </div>
+  {note && <p class="rcard-note">{note}</p>}
+  <ol class="rcard-list">
+    {rows.map((r, i) => (
+      <li>
+        <span class="rc-rank">{i + 1}</span>
+        <a class="rc-name" href={r.href}>{r.name}</a>
+        <span class="rc-right">
+          {r.spark && r.spark.length >= 2 && <span class="rc-spark"><Sparkline points={r.spark} w={52} h={16} /></span>}
+          <span class="rc-val" title={r.title}>{r.value}</span>
+        </span>
+      </li>
+    ))}
+  </ol>
+</section>

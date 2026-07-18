@@ -1,23 +1,17 @@
 ---
 import Base from '../layouts/Base.astro'
-import SearchBox from './SearchBox.astro'
-import RankTable from './RankTable.astro'
+import Hero from './Hero.astro'
+import IndexCards from './IndexCards.astro'
+import RankCard from './RankCard.astro'
 import Movers from './Movers.astro'
 import HypeGap from './HypeGap.astro'
-import { overview, ranking, seriesByKind, movers, latestMap } from '../lib/data.mjs'
-import { hypeVsUsage } from '../lib/projects.mjs'
+import { overview, ranking, movers, latestMap, seriesByKind } from '../lib/data.mjs'
+import { hypeVsUsage, buildProjects } from '../lib/projects.mjs'
 import { t } from '../lib/i18n.mjs'
+import { compact, full } from '../lib/format.mjs'
 
-const { locale = 'en' } = Astro.props
-const s = t(locale)
-const path = locale === 'zh' ? '/zh/' : '/'
-const otherPath = locale === 'zh' ? '/' : '/zh/'
-const base = locale === 'zh' ? '/zh' : '' // 内链前缀:详情页 /p/... 或 /zh/p/...
-
-const ov = await overview()
-
-// 把时序降采样到 ≤N 点(周粒度足够画 sparkline;避免把上千个日点打进 HTML)。
-function downsample(points, max = 48) {
+// 时序降采样到 ≤N 点(卡片里的小折线用)。
+function downsample(points, max = 40) {
   if (points.length <= max) return points
   const step = (points.length - 1) / (max - 1)
   const out = []
@@ -25,95 +19,64 @@ function downsample(points, max = 48) {
   return out
 }
 
-// 为一批排名行补上 sparkline 时序。一次批量查该 kind 的时序(避免每实体一次子进程)。
-async function withSpark(rows, kind, sparkMetric) {
-  const all = await seriesByKind(kind, sparkMetric)
-  return rows.map((r) => ({ ...r, spark: downsample(all.get(r.entity_id) ?? []) }))
+const { locale = 'en' } = Astro.props
+const s = t(locale)
+const path = locale === 'zh' ? '/zh/' : '/'
+const base = locale === 'zh' ? '/zh' : ''
+
+const ov = await overview()
+const KINDB = { github: 'GH', npm: 'npm', pypi: 'PyPI', huggingface: 'HF', openrouter: 'OR', modelscope: 'MS', vscode: 'VSC' }
+
+// 旗舰:统一项目综合指数(top 10)。
+const projects = await buildProjects()
+const indexRows = projects.slice(0, 10).map((p) => ({
+  name: p.name,
+  href: `${base}/project/${p.slug}`,
+  value: p.score,
+  bar: p.score,
+  badges: p.kinds.filter((k) => KINDB[k]).map((k) => KINDB[k]),
+  title: `score ${p.score}`,
+}))
+
+// 各源榜(每源 top 10)→ 卡片行,含小折线(spark 走有历史的指标)。长尾在 /browse。
+const detailHref = (entityId) => `${base}/p/${entityId.replace(':', '/')}`
+function srcRows(rows, key, sparkMap) {
+  return rows.slice(0, 10).map((r) => ({
+    name: r.name,
+    href: detailHref(r.entity_id),
+    value: compact(r.values[key]),
+    title: full(r.values[key]),
+    spark: downsample(sparkMap.get(r.entity_id) ?? []),
+  }))
 }
-
-// 排序仍按各源主指标;sparkline 走有历史的指标(github→stars 累计,npm/pypi→日下载)。
-// 本周异动:7 天 star 增量榜(动量,独家信号)。spark 降采样,避免把完整时序打进 HTML。
-const starMovers = (await movers('github', 'stars', 7))
-  .sort((a, b) => b.delta - a.delta)
-  .slice(0, 10)
-  .map((r) => ({ ...r, spark: downsample(r.spark) }))
-
-// 热度 vs 真实使用:star(关注)对包下载(使用)的排名落差。核心差异化信号。
-const [starMap, dlMonthMap, dlWeekMap] = await Promise.all([
-  latestMap('stars'),
-  latestMap('downloads_month'),
-  latestMap('downloads_week'),
+const [orusage, gh, npm, pypi, vscode, modelscope, hf] = await Promise.all([
+  ranking('openrouter', 'or_tokens_day', ['or_tokens_day']),
+  ranking('github', 'stars', ['stars']),
+  ranking('npm', 'downloads_week', ['downloads_week']),
+  ranking('pypi', 'downloads_month', ['downloads_month']),
+  ranking('vscode', 'vscode_installs', ['vscode_installs']),
+  ranking('modelscope', 'ms_downloads', ['ms_downloads']),
+  ranking('huggingface', 'hf_downloads', ['hf_downloads']),
 ])
+// 各源 sparkline 时序(每 kind 一次查询)。npm/pypi 走日下载(历史深),其余走主指标。
+const [spOr, spGh, spNpm, spPypi, spVs, spMs, spHf] = await Promise.all([
+  seriesByKind('openrouter', 'or_tokens_day'),
+  seriesByKind('github', 'stars'),
+  seriesByKind('npm', 'downloads_day'),
+  seriesByKind('pypi', 'downloads_day'),
+  seriesByKind('vscode', 'vscode_installs'),
+  seriesByKind('modelscope', 'ms_downloads'),
+  seriesByKind('huggingface', 'hf_downloads'),
+])
+
+// 右栏洞察:本周异动(7 天 star 增量)+ 热度落差。
+const starMovers = (await movers('github', 'stars', 7)).sort((a, b) => b.delta - a.delta).slice(0, 8)
+const [starMap, dlMonthMap, dlWeekMap] = await Promise.all([latestMap('stars'), latestMap('downloads_month'), latestMap('downloads_week')])
 const hype = hypeVsUsage(starMap, dlMonthMap, dlWeekMap)
 const overhyped = [...hype].sort((a, b) => b.gap - a.gap).slice(0, 6)
 const underrated = [...hype].sort((a, b) => a.gap - b.gap).slice(0, 6)
-
-// github 现有数百个实体(含自动发现);首页只展示 top 30,长尾走 /browse 目录页 + 详情页。
-const GH_TOP = 30
-const gh = await withSpark((await ranking('github', 'stars', ['stars', 'forks', 'commits'])).slice(0, GH_TOP), 'github', 'stars')
-const ghTotal = ov.entities
-const npm = await withSpark(await ranking('npm', 'downloads_week', ['downloads_week']), 'npm', 'downloads_day')
-const pypi = await withSpark(
-  await ranking('pypi', 'downloads_month', ['downloads_month', 'downloads_week']),
-  'pypi',
-  'downloads_day'
-)
-// 新源:编码 agent 安装量(vscode)、国产模型下载量(modelscope)。sparkline 从今起积累(现单点)。
-const vscode = await withSpark(await ranking('vscode', 'vscode_installs', ['vscode_installs']), 'vscode', 'vscode_installs')
-const modelscope = await withSpark(
-  await ranking('modelscope', 'ms_downloads', ['ms_downloads', 'ms_stars']),
-  'modelscope',
-  'ms_downloads'
-)
-// 开源模型真实拉取量(HuggingFace 近30天下载 + likes)。sparkline 从今起积累(现单点)。
-const hf = await withSpark(
-  await ranking('huggingface', 'hf_downloads', ['hf_downloads', 'hf_likes']),
-  'huggingface',
-  'hf_downloads'
-)
-
-const cols = s.cols
-const ghCols = [
-  { key: 'stars', label: cols.stars, primary: true },
-  { key: 'forks', label: cols.forks },
-  { key: 'commits', label: cols.commits },
-]
-const npmCols = [{ key: 'downloads_week', label: cols.dl, primary: true }]
-const pypiCols = [
-  { key: 'downloads_month', label: cols.dl, primary: true },
-  { key: 'downloads_week', label: 'Week' },
-]
-// 模型真实用量(OpenRouter 每日 token,含 30 天历史 → sparkline 有内容)。取 top 15。
-const modelUsage = (
-  await withSpark(await ranking('openrouter', 'or_tokens_day', ['or_tokens_day']), 'openrouter', 'or_tokens_day')
-).slice(0, 15)
-const orusageCols = [{ key: 'or_tokens_day', label: s.tokens, primary: true }]
-const vscodeCols = [{ key: 'vscode_installs', label: s.installs, primary: true }]
-const msCols = [
-  { key: 'ms_downloads', label: s.downloads, primary: true },
-  { key: 'ms_stars', label: cols.stars },
-]
-const hfCols = [
-  { key: 'hf_downloads', label: s.downloads, primary: true },
-  { key: 'hf_likes', label: 'Likes' },
-]
 ---
 <Base locale={locale} title={`aiagent.club — ${s.tagline}`} description={s.intro} path={path}>
-  <header class="site">
-    <div>
-      <h1>aiagent<span class="dot">.</span>club</h1>
-      <p class="tagline">{s.tagline}</p>
-    </div>
-    <div class="controls">
-      <button id="theme-toggle" class="icon-btn" type="button" aria-label={s.theme} title={s.theme}>
-        <svg class="sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
-        <svg class="moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>
-      </button>
-      <SearchBox base={base} placeholder={s.search.placeholder} label={s.search.title} />
-      <a class="langlink" href={otherPath} data-astro-prefetch="hover">{s.switchLang}</a>
-    </div>
-  </header>
-
   <nav class="topnav">
     <a href={`${base}/`} aria-current="page">{s.nav.rankings}</a>
     <a href={`${base}/changes`}>{s.nav.changelog}</a>
@@ -123,84 +86,38 @@ const hfCols = [
     <a href={`${base}/search`}>{s.nav.search}</a>
   </nav>
 
-  <p class="intro">{s.intro}</p>
-  <p class="early">{s.early}</p>
+  <Hero s={s} ov={ov} />
 
-  <div class="stats">
-    <div class="stat"><b>{ov.entities}</b><span>{s.entities}</span></div>
-    <div class="stat"><b>{ov.metrics}</b><span>{s.dataPoints}</span></div>
-    <div class="stat"><b>{ov.days}</b><span>{s.days}</span></div>
-    <div class="stat"><b>{ov.latest}</b><span>{s.snapshot}</span></div>
+  <div class="home-grid">
+    <div class="home-main">
+      <IndexCards title={s.index.title} note={s.index.note} rows={projects.slice(0, 10)} s={s} base={base} moreHref={`${base}/projects`} moreLabel={s.index.full} />
+      {orusage.length > 0 && <RankCard title={s.orusage} rows={srcRows(orusage, 'or_tokens_day', spOr)} accent="#4f46e5" />}
+      <RankCard title={s.github} rows={srcRows(gh, 'stars', spGh)} accent="#d97706" />
+      <RankCard title={s.npm} rows={srcRows(npm, 'downloads_week', spNpm)} accent="#e11d48" />
+      <RankCard title={s.pypi} rows={srcRows(pypi, 'downloads_month', spPypi)} accent="#0284c7" />
+      {vscode.length > 0 && <RankCard title={s.vscode} rows={srcRows(vscode, 'vscode_installs', spVs)} accent="#7c3aed" />}
+      {hf.length > 0 && <RankCard title={s.hf} rows={srcRows(hf, 'hf_downloads', spHf)} accent="#0891b2" />}
+      {modelscope.length > 0 && <RankCard title={s.modelscope} rows={srcRows(modelscope, 'ms_downloads', spMs)} accent="#db2777" />}
+    </div>
+
+    <aside class="home-side">
+      <Movers title={s.moversTitle} note={s.moversNote} rows={starMovers} gained={s.gained} now={s.now} base={base} />
+      {overhyped.length > 0 && (
+        <HypeGap
+          title={s.hypeTitle}
+          note={s.hypeNote}
+          overhyped={overhyped}
+          underrated={underrated}
+          overLabel={s.overhyped}
+          underLabel={s.underrated}
+          starsShort={s.starsShort}
+          dlMo={s.dlMo}
+          base={base}
+        />
+      )}
+    </aside>
   </div>
 
-  {overhyped.length > 0 && (
-    <HypeGap
-      title={s.hypeTitle}
-      note={s.hypeNote}
-      overhyped={overhyped}
-      underrated={underrated}
-      overLabel={s.overhyped}
-      underLabel={s.underrated}
-      starsShort={s.starsShort}
-      dlMo={s.dlMo}
-      base={base}
-    />
-  )}
-
-  <Movers title={s.moversTitle} note={s.moversNote} rows={starMovers} gained={s.gained} now={s.now} base={base} />
-
-  {modelUsage.length > 0 && <RankTable title={s.orusage} note={s.orusageNote} rows={modelUsage} columns={orusageCols} trendLabel={s.trend} base={base} />}
-
-  <RankTable title={s.github} note={s.githubNote} rows={gh} columns={ghCols} trendLabel={s.trend} base={base} more={{ href: `${base}/browse`, label: s.browseAll(ghTotal) }} />
-  <RankTable title={s.npm} note={s.npmNote} rows={npm} columns={npmCols} trendLabel={s.trend} base={base} />
-  <RankTable title={s.pypi} note={s.pypiNote} rows={pypi} columns={pypiCols} trendLabel={s.trend} base={base} />
-  {vscode.length > 0 && <RankTable title={s.vscode} note={s.vscodeNote} rows={vscode} columns={vscodeCols} trendLabel={s.trend} base={base} />}
-  {hf.length > 0 && <RankTable title={s.hf} note={s.hfNote} rows={hf} columns={hfCols} trendLabel={s.trend} base={base} />}
-  {modelscope.length > 0 && <RankTable title={s.modelscope} note={s.modelscopeNote} rows={modelscope} columns={msCols} trendLabel={s.trend} base={base} />}
-
-  <p class="browse-cta"><a href={`${base}/browse`}>{s.browseAll(ghTotal)}</a></p>
-
+  <p class="browse-cta"><a href={`${base}/browse`}>{s.browseAll(ov.entities)}</a></p>
   <footer class="site">{s.footer}</footer>
-
-  <script is:inline>
-    // 主题与语言完全独立。ClientRouter 切页会把 <html> 换成新页面的(静态 HTML 里没有
-    // data-theme,那是运行时加的),所以每次切换后必须从 localStorage 重新应用已存主题,
-    // 否则会回退到系统偏好(表现为"切语言就跳暗")。astro:after-swap 在重绘前触发,防闪+防丢。
-    function applyTheme() {
-      const root = document.documentElement
-      const saved = localStorage.getItem('theme')
-      if (saved === 'dark' || saved === 'light') root.dataset.theme = saved
-      const cur = root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-      root.setAttribute('data-mode', cur)
-    }
-    function bindToggle() {
-      const btn = document.getElementById('theme-toggle')
-      if (!btn || btn.dataset.bound) return
-      btn.dataset.bound = '1'
-      btn.addEventListener('click', () => {
-        const root = document.documentElement
-        const cur = root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-        const next = cur === 'dark' ? 'light' : 'dark'
-        root.dataset.theme = next
-        localStorage.setItem('theme', next)
-        root.setAttribute('data-mode', next)
-      })
-    }
-    // 切页后立即重应用主题(重绘前),再在 page-load 绑定按钮。
-    document.addEventListener('astro:after-swap', applyTheme)
-    document.addEventListener('astro:page-load', () => {
-      applyTheme()
-      bindToggle()
-    })
-    // 兜底:无 ClientRouter 环境(如自包含预览)。
-    if (document.readyState !== 'loading') {
-      applyTheme()
-      bindToggle()
-    } else {
-      document.addEventListener('DOMContentLoaded', () => {
-        applyTheme()
-        bindToggle()
-      })
-    }
-  </script>
 </Base>

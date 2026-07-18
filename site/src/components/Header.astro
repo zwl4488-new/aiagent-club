@@ -1,0 +1,16 @@
+---
+import SearchBox from './SearchBox.astro'
+// 全站统一顶部栏:左网站名,右搜索框 + 深浅切换 + 语言切换。
+const { locale = 'en', base = '', otherPath = '/', s } = Astro.props
+---
+<header class="topbar">
+  <a class="tb-brand" href={`${base}/`}>aiagent<span class="dot">.</span>club</a>
+  <div class="tb-controls">
+    <SearchBox base={base} placeholder={s.search.placeholder} label={s.search.title} />
+    <button id="theme-toggle" class="icon-btn" type="button" aria-label={s.theme} title={s.theme}>
+      <svg class="sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+      <svg class="moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>
+    </button>
+    <a class="langlink" href={otherPath} data-astro-prefetch="hover">{s.switchLang}</a>
+  </div>
+</header>

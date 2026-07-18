@@ -1,26 +1,25 @@
 ---
-import Sparkline from './Sparkline.astro'
 import { compact, full } from '../lib/format.mjs'
 // props: title, note, rows [{entity_id,name,url,latest,delta,pct,spark}], strings {gained, now}, base
 const { title, note, rows = [], gained, now, base = '' } = Astro.props
 const detailHref = (entityId) => `${base}/p/${entityId.replace(':', '/')}`
 ---
-<section class="movers">
+<section class="movers card-box">
   <div class="movers-head">
-    <h2>{title}</h2>
+    <h3>{title}</h3>
     <p class="note">{note}</p>
   </div>
   <ol class="movers-list">
     {rows.map((r, i) => (
       <li>
-        <span class="rank">{i + 1}</span>
-        <a class="name" href={detailHref(r.entity_id)}>{r.name}</a>
-        <span class="spark"><Sparkline points={r.spark} w={64} h={20} /></span>
-        <span class="delta" title={`${gained}: +${full(r.delta)}`}>
-          <span class="up">▲</span>{compact(r.delta)}
-          {r.pct != null && <span class="pct">{(r.pct * 100).toFixed(r.pct < 0.1 ? 1 : 0)}%</span>}
-        </span>
-        <span class="now" title={full(r.latest)}>{compact(r.latest)}</span>
+        <span class="mv-rank">{i + 1}</span>
+        <div class="mv-body">
+          <a class="mv-name" href={detailHref(r.entity_id)}>{r.name}</a>
+          <div class="mv-stats">
+            <span class="up" title={`${gained}: +${full(r.delta)}`}>▲ {compact(r.delta)}{r.pct != null && <span class="pct"> {(r.pct * 100).toFixed(r.pct < 0.1 ? 1 : 0)}%</span>}</span>
+            <span class="mv-now" title={full(r.latest)}>{compact(r.latest)} ★</span>
+          </div>
+        </div>
       </li>
     ))}
   </ol>

@@ -1,11 +1,16 @@
 ---
 import '../styles/global.css'
 import { ClientRouter } from 'astro:transitions'
+import Header from '../components/Header.astro'
+import { t } from '../lib/i18n.mjs'
 // props: locale ('en'|'zh'), title, description, path (当前页路径)
 //        altEn / altZh: 本页的英文 / 中文对应路径(hreflang 互指)。默认首页。
 //        jsonld: 本页额外的 schema.org 节点(对象或数组),并入站点 @graph。
 const { locale = 'en', title, description, path = '/', altEn = '/', altZh = '/zh/', jsonld = null } = Astro.props
 const SITE = 'https://www.aiagent.club'
+const s = t(locale)
+const base = locale === 'zh' ? '/zh' : ''
+const otherPath = locale === 'zh' ? altEn : altZh // 本页的另一语言 URL
 
 // 站点级结构化数据:WebSite + Organization,每页都带;详情页等再追加自己的节点(如 Dataset)。
 const orgId = `${SITE}/#org`
@@ -43,7 +48,7 @@ const jsonLdText = JSON.stringify({ '@context': 'https://schema.org', '@graph': 
     <link rel="alternate" hreflang="en" href={SITE + altEn} />
     <link rel="alternate" hreflang="zh" href={SITE + altZh} />
     <link rel="alternate" hreflang="x-default" href={SITE + altEn} />
-    <meta name="theme-color" content="#6366f1" />
+    <meta name="theme-color" content="#ea580c" />
     <!-- 结构化数据:站点(WebSite/Organization)+ 本页节点(如详情页的 Dataset)。 -->
     <script type="application/ld+json" is:inline set:html={jsonLdText} />
     <!-- 主题在首帧前就应用,避免刷新时亮/暗闪烁(FOUC)。 -->
@@ -55,8 +60,36 @@ const jsonLdText = JSON.stringify({ '@context': 'https://schema.org', '@graph': 
     <ClientRouter />
   </head>
   <body>
+    <Header locale={locale} base={base} otherPath={otherPath} s={s} />
     <div class="wrap">
       <slot />
     </div>
+    <!-- 深浅主题:与语言独立。ClientRouter 切页会重置 <html>,故每次导航重应用 + 重绑按钮。 -->
+    <script is:inline>
+      function applyTheme() {
+        const root = document.documentElement
+        const saved = localStorage.getItem('theme')
+        if (saved === 'dark' || saved === 'light') root.dataset.theme = saved
+        const cur = root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        root.setAttribute('data-mode', cur)
+      }
+      function bindToggle() {
+        const btn = document.getElementById('theme-toggle')
+        if (!btn || btn.dataset.bound) return
+        btn.dataset.bound = '1'
+        btn.addEventListener('click', () => {
+          const root = document.documentElement
+          const cur = root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          const next = cur === 'dark' ? 'light' : 'dark'
+          root.dataset.theme = next
+          localStorage.setItem('theme', next)
+          root.setAttribute('data-mode', next)
+        })
+      }
+      document.addEventListener('astro:after-swap', applyTheme)
+      document.addEventListener('astro:page-load', () => { applyTheme(); bindToggle() })
+      if (document.readyState !== 'loading') { applyTheme(); bindToggle() }
+      else document.addEventListener('DOMContentLoaded', () => { applyTheme(); bindToggle() })
+    </script>
   </body>
 </html>

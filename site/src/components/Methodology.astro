@@ -10,7 +10,7 @@ const base = locale === 'zh' ? '/zh' : ''
 const path = locale === 'zh' ? '/zh/methodology' : '/methodology'
 const otherPath = locale === 'zh' ? '/methodology' : '/zh/methodology'
 
-// 方法论正文(结构双语)。段落 = 字符串,列表 = {list:[...]}。
+// 方法论正文（结构双语）。段落 = 字符串，列表 = {list:[...]}。
 const C = {
   en: {
     title: 'Methodology',
@@ -43,11 +43,11 @@ const C = {
           'Signals are collected from public sources, both global and Chinese:',
           {
             list: [
-              'GitHub — stars, forks, commits, releases, open issues/PRs (frameworks, MCP servers, agent tooling)',
-              'npm & PyPI — weekly / monthly package downloads (real usage of the libraries)',
-              'OpenRouter — tokens processed per day per model (the hardest-to-fake model-usage signal)',
+              'GitHub — stars, forks, commits, releases, open issues/PRs (frameworks, MCP servers, agent tooling）',
+              'npm & PyPI — weekly / monthly package downloads (real usage of the libraries）',
+              'OpenRouter — tokens processed per day per model (the hardest-to-fake model-usage signal）',
               'Hugging Face — last-30-day downloads for open models, the substrate agents run on',
-              'ModelScope — download counts for Chinese models (Qwen / DeepSeek / GLM …)',
+              'ModelScope — download counts for Chinese models (Qwen / DeepSeek / GLM …）',
               'VS Code Marketplace — install counts for coding agents',
             ],
           },
@@ -84,54 +84,54 @@ const C = {
   zh: {
     title: '方法论',
     intro:
-      'aiagent.club 是面向 AI agent 生态的每日时序数据仪器。这一页说明它到底测什么、怎么测,以及如何抵御那些让多数"AI 工具榜"失真的指标游戏。',
+      'aiagent.club 是面向 AI agent 生态的每日时序数据仪器。这一页说明它到底测什么、怎么测，以及如何抵御那些让多数"AI 工具榜"失真的指标游戏。',
     sections: [
       {
         h: '它回答的问题',
         body: [
-          '多数榜单只给一个数字——通常是 GitHub star——且只是某一刻的快照。star 是关注度,而关注度既容易制造、也容易囤积。一个项目可以在没人用之后,还稳居榜首一整年。',
-          '更难、也更有价值的问题是:什么在被真正使用?什么正在此刻起势?aiagent.club 就是为回答这个而建——追踪多个信号随时间的变化,而非某一刻的单一数字。',
+          '多数榜单只给一个数字——通常是 GitHub star——且只是某一刻的快照。star 是关注度，而关注度既容易制造、也容易囤积。一个项目可以在没人用之后，还稳居榜首一整年。',
+          '更难、也更有价值的问题是：什么在被真正使用？什么正在此刻起势？aiagent.club 就是为回答这个而建——追踪多个信号随时间的变化，而非某一刻的单一数字。',
         ],
       },
       {
         h: '热度 vs. 真实使用',
         body: [
-          '对每个项目,我们把关注度信号(star、watcher)与真实使用信号(包下载量、模型处理的 token、插件安装量)并列。当二者排名相差悬殊,这个落差就是静态榜单藏起来的故事——要么是"被高估"的高 star 仓库,要么是"被低估"、安装量远高于 star 的实力项目。',
-          '下载量和 token 并非不可造假,但比刷一个 star 难得多、贵得多,而且它们反映工具是否被真正拉进了实际项目里。',
+          '对每个项目，我们把关注度信号（star、watcher）与真实使用信号（包下载量、模型处理的 token、插件安装量）并列。当二者排名相差悬殊，这个落差就是静态榜单藏起来的故事——要么是"被高估"的高 star 仓库，要么是"被低估"、安装量远高于 star 的实力项目。',
+          '下载量和 token 并非不可造假，但比刷一个 star 难得多、贵得多，而且它们反映工具是否被真正拉进了实际项目里。',
         ],
       },
       {
         h: '动量重于体量',
         body: [
-          '累计总量只奖励起步早的人。我们计算滑动窗口的增量——7 天 star 增长、周环比下载激增、新发版——并在「本周异动」和「变更日志」里呈现。一个项目在登上任何"历史总榜"之前数周,就是在这里先被看见的。',
+          '累计总量只奖励起步早的人。我们计算滑动窗口的增量——7 天 star 增长、周环比下载激增、新发版——并在「本周异动」和「变更日志」里呈现。一个项目在登上任何"历史总榜"之前数周，就是在这里先被看见的。',
         ],
       },
       {
         h: '数据源与指标',
         body: [
-          '信号采自公开源,兼顾全球与中国:',
+          '信号采自公开源，兼顾全球与中国：',
           {
             list: [
-              'GitHub —— star、fork、提交、发版、开放 issue/PR(框架、MCP 服务、agent 工具链)',
-              'npm 与 PyPI —— 周/月包下载量(库的真实使用)',
-              'OpenRouter —— 每个模型每日处理的 token(最难造假的模型用量信号)',
-              'Hugging Face —— 开源模型近 30 天下载量,agent 运行的底座',
-              'ModelScope —— 国产模型下载量(Qwen / DeepSeek / GLM …)',
-              'VS Code 应用市场 —— 编码 agent 的安装量',
+              'GitHub——star、fork、提交、发版、开放 issue/PR(框架、MCP 服务、agent 工具链）',
+              'npm 与 PyPI——周/月包下载量（库的真实使用）',
+              'OpenRouter——每个模型每日处理的 token(最难造假的模型用量信号）',
+              'Hugging Face——开源模型近 30 天下载量，agent 运行的底座',
+              'ModelScope——国产模型下载量（Qwen / DeepSeek / GLM …）',
+              'VS Code 应用市场——编码 agent 的安装量',
             ],
           },
-          '项目简介与元信息取自各自的权威源(GitHub、npm、PyPI)。数据一律以源语言呈现、绝不机器翻译——翻译名称或许可证,是一种事后无法检测的 bug。',
+          '项目简介与元信息取自各自的权威源（GitHub、npm、PyPI）。数据一律以源语言呈现、绝不机器翻译——翻译名称或许可证，是一种事后无法检测的 bug。',
         ],
       },
       {
         h: '抵御指标游戏',
         body: [
-          '一个榜单是否可信,取决于它是否对抗人为注水:',
+          '一个榜单是否可信，取决于它是否对抗人为注水：',
           {
             list: [
-              '刷星识别 —— 对涨星快得不合常理的仓库(已很大的仓库还持续每天新增数百 star)标记并剔除,不让买星项目挤掉真实项目。',
-              '交叉验证 —— 不让任何单一可刷指标决定项目地位;关注度与使用量并列呈现,被注水的数字会显眼,而非胜出。',
-              '规范去重 —— 仓库改名或换 org 时,把新旧身份合并为一条规范记录,项目不被重复计数。',
+              '刷星识别——对涨星快得不合常理的仓库（已很大的仓库还持续每天新增数百 star）标记并剔除，不让买星项目挤掉真实项目。',
+              '交叉验证——不让任何单一可刷指标决定项目地位；关注度与使用量并列呈现，被注水的数字会显眼，而非胜出。',
+              '规范去重——仓库改名或换 org 时，把新旧身份合并为一条规范记录，项目不被重复计数。',
             ],
           },
         ],
@@ -139,13 +139,13 @@ const C = {
       {
         h: '采集节奏与数据模型',
         body: [
-          '每个指标每天采两次。历史只增不改——每天记一个值、永不改写过去;这份不断累积的时序,正是护城河所在。采集幂等且自愈:被限速或失败的源会在下一轮重试,绝不污染已存的数据。对于存在公开历史的指标(如一个仓库完整的 star 历史),我们一次性回填,让趋势从深处开始而非从零。',
+          '每个指标每天采两次。历史只增不改——每天记一个值、永不改写过去；这份不断累积的时序，正是护城河所在。采集幂等且自愈：被限速或失败的源会在下一轮重试，绝不污染已存的数据。对于存在公开历史的指标（如一个仓库完整的 star 历史），我们一次性回填，让趋势从深处开始而非从零。',
         ],
       },
       {
-        h: '公开与私有,以及局限',
+        h: '公开与私有，以及局限',
         body: [
-          '榜单、当前快照与趋势图公开;完整的逐日历史保持私有。采集器开源。几点诚实的局限:新发现的项目起初只有一个数据点,趋势逐日积累;下载量是滑动窗口而非终身累计;重建的 star 历史反映的是"至今仍存在的 star",而非当时的瞬时峰值。',
+          '榜单、当前快照与趋势图公开；完整的逐日历史保持私有。采集器开源。几点诚实的局限：新发现的项目起初只有一个数据点，趋势逐日积累；下载量是滑动窗口而非终身累计；重建的 star 历史反映的是"至今仍存在的 star"，而非当时的瞬时峰值。',
         ],
       },
     ],
@@ -156,16 +156,7 @@ const c = C[locale] ?? C.en
 const title = `${c.title} | aiagent.club`
 ---
 <Base locale={locale} title={title} description={c.intro} path={path} altEn={locale === 'zh' ? otherPath : path} altZh={locale === 'zh' ? path : otherPath}>
-  <header class="site">
-    <div>
-      <h1><a href={`${base}/`} style="text-decoration:none;color:inherit">aiagent<span class="dot">.</span>club</a></h1>
-      <p class="tagline">{c.title}</p>
-    </div>
-    <div class="controls">
-      <SearchBox base={base} placeholder={s.search.placeholder} label={s.search.title} />
-      <a class="langlink" href={otherPath} data-astro-prefetch="hover">{s.switchLang}</a>
-    </div>
-  </header>
+  <h1 class="page-title">{c.title}</h1>
 
   <nav class="topnav">
     <a href={`${base}/`}>{s.nav.rankings}</a>

@@ -1,0 +1,84 @@
+---
+import Sparkline from './Sparkline.astro'
+import { compact, full } from '../lib/format.mjs'
+import { SHOW_METRICS } from '../lib/detail.mjs'
+
+// props: project(buildProjectPages 的一条), s, base('' | '/zh')
+const { project: p, s, base = '' } = Astro.props
+const KIND = { github: 'GitHub', npm: 'npm', pypi: 'PyPI', huggingface: 'Hugging Face', openrouter: 'OpenRouter', modelscope: 'ModelScope', vscode: 'VS Code' }
+const ml = s.metricLabel
+const detailHref = (slug) => `${base}/p/${slug}`
+// 综合分构成三分项
+const parts = [
+  { label: s.project.usage, pct: p.usagePct, on: p.usage > 0 },
+  { label: s.project.momentum, pct: p.momPct, on: p.momentum > 0 },
+  { label: s.project.attention, pct: p.attnPct, on: p.stars > 0 },
+]
+---
+<article class="detail proj">
+  <nav class="crumb"><a href={`${base}/projects`}>{s.project.backIndex}</a></nav>
+
+  <header class="detail-head">
+    <div class="proj-badges">{p.kinds.filter((k) => KIND[k]).map((k) => <span class="idx-badge">{KIND[k]}</span>)}</div>
+    <h1>{p.name}</h1>
+    <p class="rank-line">{s.project.inIndex(p.rank, p.total)}</p>
+  </header>
+
+  <div class="proj-score">
+    <div class="proj-score-num">
+      <b>{p.score}</b>
+      <span>{s.index.score}</span>
+    </div>
+    <div class="proj-breakdown">
+      {parts.map((pt) => (
+        <div class={`brk ${pt.on ? '' : 'brk-off'}`}>
+          <span class="brk-label">{pt.label}</span>
+          <div class="brk-bar"><i style={`width:${pt.pct}%`}></i></div>
+          <span class="brk-pct">{pt.on ? pt.pct : '—'}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  {p.intro && (
+    <section class="about">
+      <h2>{s.detail.about}</h2>
+      {p.intro.split('\n\n').map((para) => <p>{para}</p>)}
+    </section>
+  )}
+
+  <h2 class="section-h">{s.project.sources}</h2>
+  <div class="proj-sources">
+    {p.memberPages.map((m) => {
+      const primaryLabel = m.primaryMetric ? ml[m.primaryMetric] ?? m.primaryMetric : null
+      const showKeys = (SHOW_METRICS[m.kind] ?? Object.keys(m.metrics)).filter((k) => m.metrics[k] != null).slice(0, 4)
+      return (
+        <section class="psrc">
+          <div class="psrc-head">
+            <span class="idx-badge">{KIND[m.kind] ?? m.kind}</span>
+            <a class="psrc-name" href={detailHref(m.slug)}>{m.name}</a>
+            <a class="psrc-more" href={detailHref(m.slug)}>{s.project.viewDetail}</a>
+          </div>
+          <div class="psrc-body">
+            {primaryLabel && (
+              <div class="psrc-primary">
+                <b title={full(m.primaryValue)}>{compact(m.primaryValue)}</b>
+                <span>{primaryLabel}</span>
+              </div>
+            )}
+            <div class="psrc-spark"><Sparkline points={m.spark} w={180} h={40} /></div>
+          </div>
+          {showKeys.length > 0 && (
+            <ul class="psrc-metrics">
+              {showKeys.map((k) => (
+                <li><span>{ml[k] ?? k}</span> <b title={full(m.metrics[k].value)}>{compact(m.metrics[k].value)}</b></li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )
+    })}
+  </div>
+
+  <footer class="detail-foot"><a href={`${base}/projects`}>{s.project.backIndex}</a></footer>
+</article>

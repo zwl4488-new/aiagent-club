@@ -36,16 +36,7 @@ const columns = [
 const title = `${s.pricing.title} | aiagent.club`
 ---
 <Base locale={locale} title={title} description={s.pricing.intro} path={path} altEn={locale === 'zh' ? otherPath : path} altZh={locale === 'zh' ? path : otherPath}>
-  <header class="site">
-    <div>
-      <h1><a href={`${base}/`} style="text-decoration:none;color:inherit">aiagent<span class="dot">.</span>club</a></h1>
-      <p class="tagline">{s.pricing.title}</p>
-    </div>
-    <div class="controls">
-      <SearchBox base={base} placeholder={s.search.placeholder} label={s.search.title} />
-      <a class="langlink" href={otherPath} data-astro-prefetch="hover">{s.switchLang}</a>
-    </div>
-  </header>
+  <h1 class="page-title">{s.pricing.title}</h1>
 
   <nav class="topnav">
     <a href={`${base}/`}>{s.nav.rankings}</a>

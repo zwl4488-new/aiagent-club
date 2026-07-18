@@ -1,0 +1,35 @@
+---
+import { compact } from '../lib/format.mjs'
+// 旗舰指数:每个项目一张小卡片(网格)。props: title, note, rows(buildProjects 项目), s, base, moreHref, moreLabel
+const { title, note, rows = [], s, base = '', moreHref, moreLabel } = Astro.props
+const KIND = { github: 'GH', npm: 'npm', pypi: 'PyPI', huggingface: 'HF', openrouter: 'OR', modelscope: 'MS', vscode: 'VSC' }
+---
+<section class="idxcards">
+  <div class="idxcards-head">
+    <h3>{title}</h3>
+    {moreHref && <a class="rcard-more" href={moreHref}>{moreLabel}</a>}
+  </div>
+  {note && <p class="rcard-note">{note}</p>}
+  <ol class="idxcards-grid">
+    {rows.map((p, i) => (
+      <li>
+        <a class="ixc" href={`${base}/project/${p.slug}`}>
+          <div class="ixc-top">
+            <span class="ixc-rank">{i + 1}</span>
+            <span class="ixc-name">{p.name}</span>
+            <span class="ixc-badges">{p.kinds.filter((k) => KIND[k]).map((k) => <span class="rc-badge">{KIND[k]}</span>)}</span>
+          </div>
+          <div class="ixc-score">
+            <div class="idx-bar"><i style={`width:${p.score}%`}></i></div>
+            <b>{p.score}</b>
+          </div>
+          <div class="ixc-stat">
+            {p.usage > 0 && <span>{compact(p.usage)} {s.index.usage}</span>}
+            {p.stars > 0 && <span>{compact(p.stars)} ★</span>}
+            {p.momentum > 0 && <span class="up">▲ {compact(p.momentum)}</span>}
+          </div>
+        </a>
+      </li>
+    ))}
+  </ol>
+</section>

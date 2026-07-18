@@ -1,0 +1,38 @@
+---
+import Base from '../layouts/Base.astro'
+import SearchBox from './SearchBox.astro'
+import Index from './Index.astro'
+import { buildProjects } from '../lib/projects.mjs'
+import { t } from '../lib/i18n.mjs'
+
+// props: locale
+const { locale = 'en' } = Astro.props
+const s = t(locale)
+const base = locale === 'zh' ? '/zh' : ''
+const path = locale === 'zh' ? '/zh/projects' : '/projects'
+const otherPath = locale === 'zh' ? '/projects' : '/zh/projects'
+
+// 完整指数:有信号的软件项目(score>0)按综合分排序,展示前 200(尾部是冷门单源仓、分数近 0,
+// 价值低且拖重页面,长尾走 Browse 目录)。
+const all = (await buildProjects()).filter((p) => p.score > 0)
+const projects = all.slice(0, 200)
+const title = `${s.index.title} | aiagent.club`
+---
+<Base locale={locale} title={title} description={s.index.note} path={path} altEn={locale === 'zh' ? otherPath : path} altZh={locale === 'zh' ? path : otherPath}>
+  <h1 class="page-title">{s.index.title}</h1>
+
+  <nav class="topnav">
+    <a href={`${base}/`}>{s.nav.rankings}</a>
+    <a href={`${base}/changes`}>{s.nav.changelog}</a>
+    <a href={`${base}/pricing`}>{s.nav.pricing}</a>
+    <a href={`${base}/browse`}>{s.nav.browse}</a>
+    <a href={`${base}/methodology`}>{s.nav.methodology}</a>
+    <a href={`${base}/search`}>{s.nav.search}</a>
+  </nav>
+
+  <p class="intro">{s.index.full1(all.length)}</p>
+  <Index title={s.index.title} note={s.index.note} rows={projects} s={s} base={base} />
+
+  <p class="browse-cta"><a href={`${base}/`}>{s.detail.backHome}</a></p>
+  <footer class="site">{s.footer}</footer>
+</Base>

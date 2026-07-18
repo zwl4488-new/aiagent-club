@@ -1,0 +1,17 @@
+---
+// 首页 Hero:彩色渐变横幅 + 标题 + 一句话定位 + 数据条。
+// props: s(翻译), ov(overview 概况)
+const { s, ov } = Astro.props
+---
+<section class="hero">
+  <div class="hero-inner">
+    <h1 class="hero-title">{s.heroTitle}</h1>
+    <p class="hero-sub">{s.heroSub}</p>
+    <div class="hero-stats">
+      <div><b>{ov.entities}</b><span>{s.entities}</span></div>
+      <div><b>{ov.metrics}</b><span>{s.dataPoints}</span></div>
+      <div><b>{ov.days}</b><span>{s.days}</span></div>
+      <div><b>{ov.latest}</b><span>{s.snapshot}</span></div>
+    </div>
+  </div>
+</section>
