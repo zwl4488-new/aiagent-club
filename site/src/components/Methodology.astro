@@ -38,16 +38,23 @@ const C = {
         ],
       },
       {
+        h: 'The composite index',
+        body: [
+          'The headline AI Agent Index score fuses three signals into one number. Each is converted to a percentile against every other software project, then blended: real usage (45%), momentum (30%), and attention (25%). Usage carries the most weight because it is the hardest to fake; attention the least because it is the easiest.',
+          'Crucially, the weights are not renormalized when a signal is missing. A repository with only stars — no package, no measurable usage — scores zero on the usage and momentum components rather than having its one strong number inflated to fill the gap. So a project climbs only by showing up across independent signals; being excellent at the single metric you can game is deliberately not enough to reach the top.',
+        ],
+      },
+      {
         h: 'Sources & metrics',
         body: [
           'Signals are collected from public sources, both global and Chinese:',
           {
             list: [
-              'GitHub — stars, forks, commits, releases, open issues/PRs (frameworks, MCP servers, agent tooling）',
-              'npm & PyPI — weekly / monthly package downloads (real usage of the libraries）',
-              'OpenRouter — tokens processed per day per model (the hardest-to-fake model-usage signal）',
+              'GitHub — stars, forks, commits, releases, open issues/PRs (frameworks, MCP servers, agent tooling)',
+              'npm & PyPI — weekly / monthly package downloads (real usage of the libraries)',
+              'OpenRouter — tokens processed per day per model (the hardest-to-fake model-usage signal)',
               'Hugging Face — last-30-day downloads for open models, the substrate agents run on',
-              'ModelScope — download counts for Chinese models (Qwen / DeepSeek / GLM …）',
+              'ModelScope — download counts for Chinese models (Qwen / DeepSeek / GLM …)',
               'VS Code Marketplace — install counts for coding agents',
             ],
           },
@@ -107,14 +114,21 @@ const C = {
         ],
       },
       {
+        h: '综合指数',
+        body: [
+          '首页的 AI Agent 指数把三类信号融成一个数字。每一类都先换算成相对全体软件项目的百分位，再加权融合：真实使用（45%）、动量（30%）、关注度（25%）。使用量权重最高，因为它最难造假；关注度最低，因为它最易制造。',
+          '关键在于：某类信号缺失时，权重不做重新归一。一个只有 star、没有包、无可测使用量的仓库，在使用与动量两项上得零分，而非把它唯一的强项数字放大去填补空缺。于是一个项目只有在多个独立信号上都有表现才会上升；把单一可刷指标做到极致，被刻意设计成不足以登顶。',
+        ],
+      },
+      {
         h: '数据源与指标',
         body: [
           '信号采自公开源，兼顾全球与中国：',
           {
             list: [
-              'GitHub——star、fork、提交、发版、开放 issue/PR(框架、MCP 服务、agent 工具链）',
+              'GitHub——star、fork、提交、发版、开放 issue/PR（框架、MCP 服务、agent 工具链）',
               'npm 与 PyPI——周/月包下载量（库的真实使用）',
-              'OpenRouter——每个模型每日处理的 token(最难造假的模型用量信号）',
+              'OpenRouter——每个模型每日处理的 token（最难造假的模型用量信号）',
               'Hugging Face——开源模型近 30 天下载量，agent 运行的底座',
               'ModelScope——国产模型下载量（Qwen / DeepSeek / GLM …）',
               'VS Code 应用市场——编码 agent 的安装量',

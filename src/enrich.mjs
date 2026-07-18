@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { runSqlite, createWriter, query } from './db.mjs'
 import { fetchRetry, sleep } from './fetch/client.mjs'
-import { GITHUB_REPOS, NPM_PACKAGES, PYPI_PACKAGES, HF_MODELS } from './entities.mjs'
+import { GITHUB_REPOS, NPM_PACKAGES, PYPI_PACKAGES, HF_MODELS, MODELSCOPE_MODELS, VSCODE_EXTENSIONS } from './entities.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const UA = 'aiagent-club'
@@ -159,6 +159,35 @@ async function fetchHuggingFaceReadme(id) {
   return stripHfFrontmatter(await res.text())
 }
 
+/** ModelScope 模型卡:raw README(与 HF 同构,含 YAML frontmatter,剥掉再清洗)。 */
+async function fetchModelScopeReadme(id) {
+  const res = await fetchRetry(`https://modelscope.cn/models/${id}/resolve/master/README.md`, { notFoundOk: true, retries: 2, headers: { 'user-agent': UA } })
+  if (res.status === 404) return null
+  return stripHfFrontmatter(await res.text())
+}
+
+/**
+ * VS Code 扩展 README:先查 Marketplace gallery(POST extensionquery)拿 README 资源 URL,再取 markdown。
+ * flags=103 让响应带上 versions[].files[](含 Content.Details 资源)。找不到资源则 null。
+ */
+async function fetchVscodeReadme(id) {
+  const q = await fetchRetry('https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery', {
+    method: 'POST',
+    notFoundOk: true,
+    retries: 2,
+    headers: { 'content-type': 'application/json', accept: 'application/json;api-version=7.2-preview.1', 'user-agent': UA },
+    body: JSON.stringify({ filters: [{ criteria: [{ filterType: 7, value: id }] }], flags: 103 }),
+  })
+  if (q.status === 404) return null
+  const j = await q.json()
+  const version = j?.results?.[0]?.extensions?.[0]?.versions?.[0]
+  const asset = version?.files?.find((f) => /Content\.Details/.test(f.assetType))
+  if (!asset?.source) return null
+  const res = await fetchRetry(asset.source, { notFoundOk: true, retries: 2, headers: { 'user-agent': UA } })
+  if (res.status === 404) return null
+  return res.text()
+}
+
 /**
  * 通用富集循环:逐项取原文 → 清洗 → 存 intro。容错、幂等、间隔温和。
  * @param {object} p
@@ -194,7 +223,7 @@ async function main() {
   const args = process.argv.slice(2)
   const refresh = args.includes('--refresh')
   const kinds = args.filter((a) => !a.startsWith('--'))
-  const want = kinds.length ? kinds : ['github', 'npm', 'pypi', 'huggingface']
+  const want = kinds.length ? kinds : ['github', 'npm', 'pypi', 'huggingface', 'modelscope', 'vscode']
   const log = (m) => console.log(`[${new Date().toISOString()}] ${m}`)
   log(`enrich start: db=${dbPath} kinds=${want.join(',')} refresh=${refresh}`)
   await ensureSchema(dbPath)
@@ -250,6 +279,34 @@ async function main() {
       ids: HF_MODELS,
       entityId: (id) => `huggingface:${id}`,
       fetchRaw: (id) => fetchHuggingFaceReadme(id),
+      writer,
+      dbPath,
+      log,
+      refresh,
+      gapMs: GH_GAP_MS,
+    })
+  }
+  if (want.includes('modelscope')) {
+    log('── modelscope intro ──')
+    await enrichKind({
+      kind: 'modelscope',
+      ids: MODELSCOPE_MODELS,
+      entityId: (id) => `modelscope:${id}`,
+      fetchRaw: (id) => fetchModelScopeReadme(id),
+      writer,
+      dbPath,
+      log,
+      refresh,
+      gapMs: GH_GAP_MS,
+    })
+  }
+  if (want.includes('vscode')) {
+    log('── vscode intro ──')
+    await enrichKind({
+      kind: 'vscode',
+      ids: VSCODE_EXTENSIONS,
+      entityId: (id) => `vscode:${id}`,
+      fetchRaw: (id) => fetchVscodeReadme(id),
       writer,
       dbPath,
       log,
