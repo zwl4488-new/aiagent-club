@@ -35,8 +35,11 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # 手动触发无条件跑;由 collect 接力时,只有那次采集成功才部署(失败/取消不部署,避免发半截数据)。
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    # 手动触发无条件跑;由 collect 接力时,success 与 failure 都部署,只跳过 cancelled/skipped。
+    # 关键:run.mjs 只要有任一源抛错就 exit 1(=job failure),但各源相互隔离、且"Push data.db to R2"
+    # 用 always() 照推——所以"failure"绝大多数是某个源临时抽风,R2 里仍是刚采到的新数据,理应照常上线。
+    # 只有整轮被取消(没推数据)才不部署。
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure' }}
     environment: aiagent-club-fetch
     env:
       # 绝对路径:构建步骤在 site/ 下跑(cd site),相对 data.db 会解析成 site/data.db 而找不到;
