@@ -48,6 +48,7 @@ async function ensureSchema(dbPath) {
   // 故显式补列(SQLite 无 ADD COLUMN IF NOT EXISTS,先查 pragma 再决定,避免"duplicate column"报错)。
   await addColumnIfMissing(dbPath, 'entities', 'description', 'TEXT')
   await addColumnIfMissing(dbPath, 'entities', 'intro', 'TEXT')
+  await addColumnIfMissing(dbPath, 'entities', 'project_key', 'TEXT')
 }
 
 /**

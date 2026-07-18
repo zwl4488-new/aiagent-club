@@ -151,7 +151,8 @@ async function hasColumn(table, column) {
 export async function allEntities() {
   const desc = (await hasColumn('entities', 'description')) ? 'description' : `NULL AS description`
   const intro = (await hasColumn('entities', 'intro')) ? 'intro' : `NULL AS intro`
-  return query(`SELECT entity_id, kind, name, url, category, ${desc}, ${intro}, first_seen FROM entities ORDER BY kind, name`)
+  const pkey = (await hasColumn('entities', 'project_key')) ? 'project_key' : `NULL AS project_key`
+  return query(`SELECT entity_id, kind, name, url, category, ${desc}, ${intro}, ${pkey}, first_seen FROM entities ORDER BY kind, name`)
 }
 
 /**

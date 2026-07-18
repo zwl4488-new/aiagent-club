@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS entities (
   category    TEXT,
   description TEXT,                           -- 项目一句话简介(github GraphQL / npm / pypi 取,详情页展示)
   intro       TEXT,                           -- 项目介绍摘录(README / long_description 清洗出的前几段 prose,详情页展示)
+  project_key TEXT,                           -- 多源归并键(小写 github owner/name;取不到=自身 entity_id),同 key = 同一项目
   lang        TEXT CHECK (lang IN ('en','zh') OR lang IS NULL),
   first_seen  TEXT,                          -- ISO date 'YYYY-MM-DD'
   last_seen   TEXT,

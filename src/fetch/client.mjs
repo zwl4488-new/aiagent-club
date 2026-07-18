@@ -64,11 +64,13 @@ export async function fetchRetry(url, opts = {}) {
   for (let attempt = 0; attempt <= retries; attempt++) {
     const ctrl = new AbortController()
     const timer = setTimeout(() => ctrl.abort(), timeoutMs)
+    if (typeof timer.unref === 'function') timer.unref() // 不因待触发的超时定时器阻塞进程退出
     try {
       const res = await fetch(url, { ...init, headers, signal: ctrl.signal })
-      clearTimeout(timer)
+      // 关键:成功/404 返回时**不**清 timer —— 让这个超时继续覆盖调用方的 body 读取(res.json/text)。
+      // 否则响应头到了但 body 中途 stall 时,调用方 await res.json() 会永久挂起(曾致 star 回填卡死 5h)。
+      // timer 到点会 abort、令 body 读取抛错而非死等;若 body 已读完,abort 为空操作;unref 保证不挡退出。
       if (res.ok) return res
-      // 404 且调用方声明可接受(如"包不存在"):原样返回,让调用方处理为 missing。
       if (res.status === 404 && notFoundOk) return res
 
       const isRateLimited = res.status === 429 || res.status === 403
@@ -76,8 +78,10 @@ export async function fetchRetry(url, opts = {}) {
       if (!isRateLimited && !isServerErr) {
         // 4xx(非限速):重试无意义,带响应体抛错便于诊断。
         const body = await res.text().catch(() => '')
+        clearTimeout(timer)
         throw new Error(`HTTP ${res.status} ${url} :: ${body.slice(0, 300)}`)
       }
+      clearTimeout(timer) // 要重试:清掉本次定时器,下次循环新建
       lastErr = new Error(`HTTP ${res.status} ${url}`)
       if (attempt === retries) break
       const nowSec = Math.floor(Date.now() / 1000)
