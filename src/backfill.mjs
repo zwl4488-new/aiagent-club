@@ -273,6 +273,34 @@ async function backfillGithubCumulative({ repos, token, metric, writer, log, dbP
   return written
 }
 
+/**
+ * 取 star 数最高的前 N 个 github 仓(按库里最新 stars 值排序),用于把最贵的 stars 回填收敛到
+ * 高价值头部——尾部长尾仓 star 极耗 GitHub 额度、边际收益低。返回 owner/name 列表,且只保留仍在
+ * GITHUB_REPOS 采集清单内的。查不到(冷启动无 stars 行)则退回全量。
+ * @param {string} dbPath
+ * @param {number} n
+ * @returns {Promise<string[]>}
+ */
+async function topStarRepos(dbPath, n) {
+  const rows = /** @type {any[]} */ (
+    await query(
+      dbPath,
+      `SELECT entity_id, value FROM metrics m WHERE metric='stars' AND captured_at=(` +
+        `SELECT max(captured_at) FROM metrics m2 WHERE m2.entity_id=m.entity_id AND m2.metric='stars') ` +
+        `ORDER BY value DESC LIMIT ${Math.max(1, n)}`,
+    )
+  )
+  const inScope = new Set(GITHUB_REPOS.map((r) => r.toLowerCase()))
+  const repos = rows.map((r) => String(r.entity_id).replace(/^github:/, '')).filter((r) => inScope.has(r.toLowerCase()))
+  return repos.length ? repos : GITHUB_REPOS
+}
+
+/** stars 任务的 repo 集合:设了 STARS_TOP_N 就收敛到 star top-N,否则全量。 */
+async function starsRepos(dbPath) {
+  const topN = Number(process.env.STARS_TOP_N)
+  return Number.isFinite(topN) && topN > 0 ? topStarRepos(dbPath, topN) : GITHUB_REPOS
+}
+
 // ── 编排 ──
 const TASKS = {
   commits: (ctx) => backfillGithubCommits({ ...ctx, repos: GITHUB_REPOS }),
@@ -280,7 +308,7 @@ const TASKS = {
   releases: (ctx) => backfillGithubCumulative({ ...ctx, repos: GITHUB_REPOS, metric: 'releases' }),
   forks: (ctx) => backfillGithubCumulative({ ...ctx, repos: GITHUB_REPOS, metric: 'forks' }),
   pypi: (ctx) => backfillPypiDaily({ ...ctx, packages: PYPI_PACKAGES }),
-  stars: (ctx) => backfillGithubCumulative({ ...ctx, repos: GITHUB_REPOS, metric: 'stars' }),
+  stars: async (ctx) => backfillGithubCumulative({ ...ctx, repos: await starsRepos(ctx.dbPath), metric: 'stars' }),
 }
 const DEFAULT_TASKS = ['commits', 'npm', 'releases', 'forks', 'pypi'] // 便宜项;stars 需显式指定
 
