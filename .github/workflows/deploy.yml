@@ -116,3 +116,9 @@ jobs:
             --mode AK --access-key-id "$ALI_ID" --access-key-secret "$ALI_SECRET" --region cn-hangzhou \
             --ObjectType Directory \
             --ObjectPath "$(printf 'https://www.aiagent.club/\nhttps://aiagent.club/')"
+
+      # 新内容上线后,主动通知 IndexNow(Bing/Yandex/DuckDuckGo 秒级重抓核心索引页)。
+      # 无需 secret(key 是公开的,校验文件在 /<key>.txt);失败只告警,不影响部署结果。
+      - name: Ping IndexNow
+        if: always()
+        run: node src/indexnow.mjs
