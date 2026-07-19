@@ -3,11 +3,11 @@
 export const STRINGS = {
   en: {
     lang: 'en',
-    tagline: 'Time-series tracking for the AI agent ecosystem',
+    tagline: 'The AI agent ecosystem, measured daily',
     heroTitle: 'The AI agent ecosystem, measured.',
     heroSub: 'Hype vs. real usage, and what is gaining momentum — every project unified across GitHub, packages, and models, scored daily.',
     intro:
-      'How agent frameworks, MCP servers, and packages grow over time — measured daily. Rankings cross-validate multiple signals so no single gameable metric dominates.',
+      'How agent frameworks, MCP servers, and packages grow over time — measured daily. Rankings cross-validate signals so no single gameable metric wins.',
     early: 'Early development — data is accumulating. Time series grow one day at a time.',
     snapshot: 'Snapshot',
     entities: 'entities',
