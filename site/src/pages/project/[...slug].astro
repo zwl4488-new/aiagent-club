@@ -17,6 +17,6 @@ const stat = project.usage > 0 ? `${compact(project.usage)}/mo` : project.stars 
 const title = `${project.name} — AI Agent Index | aiagent.club`
 const description = project.intro ? `${project.name}: ${project.intro.slice(0, 140)}` : `${project.name} — score ${project.score} in the AI Agent Index. ${stat}. Unified GitHub + package + model metrics, tracked daily by aiagent.club.`
 ---
-<Base locale="en" title={title} description={description} path={path} altEn={path} altZh={`/zh/project/${project.slug}`}>
-  <ProjectDetail project={project} s={s} base="" />
+<Base locale="en" title={title} description={description} path={path} altEn={path} altZh={`/zh/project/${project.slug}`} ogImage={`/og/p/h-en/${project.slug}.png`}>
+  <ProjectDetail project={project} s={s} base="" poster={project.rank <= 100 ? `/og/p/v-en/${project.slug}.png` : null} />
 </Base>

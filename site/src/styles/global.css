@@ -167,6 +167,10 @@ footer.site a { color: var(--accent); }
 .detail-meta a { color: var(--accent); text-decoration: none; }
 .detail-meta a:hover { text-decoration: underline; }
 .rank-line { margin: 0.8rem 0 0; color: var(--fg-soft); font-size: 0.9rem; }
+.poster-cta { margin: 0.6rem 0 0; font-size: 0.85rem; }
+.poster-cta a, .poster-dl { color: var(--accent); text-decoration: none; }
+.poster-dl { margin-left: 0.9rem; font-size: 0.82rem; font-weight: 600; white-space: nowrap; }
+.poster-cta a:hover, .poster-dl:hover { text-decoration: underline; }
 
 .hero-stat {
   display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap;

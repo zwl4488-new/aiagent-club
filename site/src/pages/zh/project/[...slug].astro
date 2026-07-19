@@ -16,6 +16,6 @@ const path = `/zh/project/${project.slug}`
 const title = `${project.name} — AI Agent 指数 | aiagent.club`
 const description = project.intro ? `${project.name}:${project.intro.slice(0, 140)}` : `${project.name} —— AI Agent 指数综合分 ${project.score}。合并 GitHub + 软件包 + 模型的多源指标,aiagent.club 每日追踪。`
 ---
-<Base locale="zh" title={title} description={description} path={path} altEn={`/project/${project.slug}`} altZh={path}>
-  <ProjectDetail project={project} s={s} base="/zh" />
+<Base locale="zh" title={title} description={description} path={path} altEn={`/project/${project.slug}`} altZh={path} ogImage={`/og/p/h-zh/${project.slug}.png`}>
+  <ProjectDetail project={project} s={s} base="/zh" poster={project.rank <= 100 ? `/og/p/v-zh/${project.slug}.png` : null} />
 </Base>

@@ -6,8 +6,10 @@ import { t } from '../lib/i18n.mjs'
 // props: locale ('en'|'zh'), title, description, path (当前页路径)
 //        altEn / altZh: 本页的英文 / 中文对应路径(hreflang 互指)。默认首页。
 //        jsonld: 本页额外的 schema.org 节点(对象或数组),并入站点 @graph。
-const { locale = 'en', title, description, path = '/', altEn = '/', altZh = '/zh/', jsonld = null } = Astro.props
+//        ogImage: 本页社交预览图路径(横版卡,给 og:image);默认首页指数卡。
+const { locale = 'en', title, description, path = '/', altEn = '/', altZh = '/zh/', jsonld = null, ogImage } = Astro.props
 const SITE = 'https://www.aiagent.club'
+const ogImg = SITE + (ogImage ?? `/og/index-h-${locale === 'zh' ? 'zh' : 'en'}.png`)
 const s = t(locale)
 const base = locale === 'zh' ? '/zh' : ''
 const otherPath = locale === 'zh' ? altEn : altZh // 本页的另一语言 URL
@@ -43,12 +45,27 @@ const jsonLdText = JSON.stringify({ '@context': 'https://schema.org', '@graph': 
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <meta name="google-site-verification" content="3LpivoAHnXxLSqfriquA2qht72iMLqfNLdzfSOPkjk0" />
     <link rel="canonical" href={SITE + path} />
     <!-- hreflang 互指:英文兼 x-default,中文对应页。 -->
     <link rel="alternate" hreflang="en" href={SITE + altEn} />
     <link rel="alternate" hreflang="zh" href={SITE + altZh} />
     <link rel="alternate" hreflang="x-default" href={SITE + altEn} />
     <meta name="theme-color" content="#ea580c" />
+    <!-- 社交分享预览:横版指数/项目卡(构建期生成,每次部署刷新)。 -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="aiagent.club" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={SITE + path} />
+    <meta property="og:image" content={ogImg} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content={locale === 'zh' ? 'zh_CN' : 'en_US'} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImg} />
     <!-- 结构化数据:站点(WebSite/Organization)+ 本页节点(如详情页的 Dataset)。 -->
     <script type="application/ld+json" is:inline set:html={jsonLdText} />
     <!-- 主题在首帧前就应用,避免刷新时亮/暗闪烁(FOUC)。 -->

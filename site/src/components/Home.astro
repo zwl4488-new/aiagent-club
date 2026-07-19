@@ -91,6 +91,7 @@ const underrated = [...hype].sort((a, b) => a.gap - b.gap).slice(0, 6)
   <div class="home-grid">
     <div class="home-main">
       <IndexCards title={s.index.title} note={s.index.note} rows={projects.slice(0, 10)} s={s} base={base} moreHref={`${base}/projects`} moreLabel={s.index.full} />
+      <p class="poster-cta"><a href={`/og/index-v-${locale === 'zh' ? 'zh' : 'en'}.png`} download>{locale === 'zh' ? '↓ 下载指数海报（竖版分享图）' : '↓ Download the index poster'}</a></p>
       {orusage.length > 0 && <RankCard title={s.orusage} rows={srcRows(orusage, 'or_tokens_day', spOr)} accent="#4f46e5" />}
       <RankCard title={s.github} rows={srcRows(gh, 'stars', spGh)} accent="#d97706" />
       <RankCard title={s.npm} rows={srcRows(npm, 'downloads_week', spNpm)} accent="#e11d48" />

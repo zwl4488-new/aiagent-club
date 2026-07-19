@@ -3,8 +3,9 @@ import Sparkline from './Sparkline.astro'
 import { compact, full } from '../lib/format.mjs'
 import { SHOW_METRICS } from '../lib/detail.mjs'
 
-// props: project(buildProjectPages 的一条), s, base('' | '/zh')
-const { project: p, s, base = '' } = Astro.props
+// props: project(buildProjectPages 的一条), s, base('' | '/zh'), poster(竖版海报 URL,仅 top-100 有)
+const { project: p, s, base = '', poster = null } = Astro.props
+const posterLabel = base === '/zh' ? '↓ 下载分享海报' : '↓ Download poster'
 const KIND = { github: 'GitHub', npm: 'npm', pypi: 'PyPI', huggingface: 'Hugging Face', openrouter: 'OpenRouter', modelscope: 'ModelScope', vscode: 'VS Code' }
 const ml = s.metricLabel
 const detailHref = (slug) => `${base}/p/${slug}`
@@ -21,7 +22,7 @@ const parts = [
   <header class="detail-head">
     <div class="proj-badges">{p.kinds.filter((k) => KIND[k]).map((k) => <span class="idx-badge">{KIND[k]}</span>)}</div>
     <h1>{p.name}</h1>
-    <p class="rank-line">{s.project.inIndex(p.rank, p.total)}</p>
+    <p class="rank-line">{s.project.inIndex(p.rank, p.total)}{poster && <a class="poster-dl" href={poster} download>{posterLabel}</a>}</p>
   </header>
 
   <div class="proj-score">
