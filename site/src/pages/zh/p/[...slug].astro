@@ -35,6 +35,6 @@ const jsonld = {
   ...(entity.kind === 'github' && entity.url ? { about: { '@type': 'SoftwareSourceCode', name: entity.name, codeRepository: entity.url } } : {}),
 }
 ---
-<Base locale="zh" title={title} description={description} path={path} altEn={`/p/${entity.slug}`} altZh={path} jsonld={jsonld}>
+<Base locale="zh" title={title} description={description} path={path} altEn={`/p/${entity.slug}`} altZh={path} jsonld={jsonld} noindex={!entity.intro}>
   <EntityDetail entity={entity} s={s} base="/zh" />
 </Base>

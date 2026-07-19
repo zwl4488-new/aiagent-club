@@ -7,7 +7,8 @@ import { t } from '../lib/i18n.mjs'
 //        altEn / altZh: 本页的英文 / 中文对应路径(hreflang 互指)。默认首页。
 //        jsonld: 本页额外的 schema.org 节点(对象或数组),并入站点 @graph。
 //        ogImage: 本页社交预览图路径(横版卡,给 og:image);默认首页指数卡。
-const { locale = 'en', title, description, path = '/', altEn = '/', altZh = '/zh/', jsonld = null, ogImage } = Astro.props
+//        noindex: 薄页(无独特正文)设 true → robots noindex,follow(不收录本页但仍跟随链接)。
+const { locale = 'en', title, description, path = '/', altEn = '/', altZh = '/zh/', jsonld = null, ogImage, noindex = false } = Astro.props
 const SITE = 'https://www.aiagent.club'
 const ogImg = SITE + (ogImage ?? `/og/index-h-${locale === 'zh' ? 'zh' : 'en'}.png`)
 const s = t(locale)
@@ -45,6 +46,7 @@ const jsonLdText = JSON.stringify({ '@context': 'https://schema.org', '@graph': 
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, follow" />}
     <meta name="google-site-verification" content="3LpivoAHnXxLSqfriquA2qht72iMLqfNLdzfSOPkjk0" />
     <link rel="canonical" href={SITE + path} />
     <!-- hreflang 互指:英文兼 x-default,中文对应页。 -->

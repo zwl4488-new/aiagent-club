@@ -12,6 +12,7 @@ export async function GET() {
     urls.push(`/zh/project/${p.slug}`)
   }
   for (const p of pages) {
+    if (!p.intro) continue // 薄页(无独特正文)已 noindex,不引导抓取 → 不进 sitemap
     urls.push(`/p/${p.slug}`)
     urls.push(`/zh/p/${p.slug}`)
   }
