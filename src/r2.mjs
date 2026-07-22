@@ -86,6 +86,8 @@ async function request(method, key, payload = Buffer.alloc(0), cfg = loadR2Confi
     now: new Date(),
   })
   const url = `${cfg.endpoint.replace(/\/$/, '')}${canonicalUri}`
+  // R2 大文件(数十 MB)经本机 HTTP 代理 CONNECT 易挂/极慢;Cloudflare 端点通常可直连。
+  // 采集器的 HF 等外网请求才走 fetchProxyAware(见 client.mjs)。
   return fetch(url, { method, headers, body: method === 'PUT' ? payload : undefined })
 }
 

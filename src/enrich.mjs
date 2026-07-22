@@ -154,9 +154,20 @@ export function stripHfFrontmatter(md) {
 
 async function fetchHuggingFaceReadme(id) {
   // 模型卡原文在 raw 端点;开头常带 YAML frontmatter,先剥掉再清洗。
-  const res = await fetchRetry(`https://huggingface.co/${id}/raw/main/README.md`, { notFoundOk: true, retries: 2, headers: { 'user-agent': UA } })
-  if (res.status === 404) return null
-  return stripHfFrontmatter(await res.text())
+  // gated 模型(Llama/Gemma 等)无 token 会 401 —— 有 HF_TOKEN 则带上,否则当缺失跳过。
+  const token = process.env.HF_TOKEN || process.env.HUGGING_FACE_HUB_TOKEN
+  /** @type {Record<string,string>} */
+  const headers = { 'user-agent': UA }
+  if (token) headers.authorization = `Bearer ${token}`
+  try {
+    const res = await fetchRetry(`https://huggingface.co/${id}/raw/main/README.md`, { notFoundOk: true, retries: 2, headers })
+    if (res.status === 404) return null
+    return stripHfFrontmatter(await res.text())
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    if (/^HTTP 401 |^HTTP 403 /.test(msg)) return null
+    throw e
+  }
 }
 
 /** ModelScope 模型卡:raw README(与 HF 同构,含 YAML frontmatter,剥掉再清洗)。 */

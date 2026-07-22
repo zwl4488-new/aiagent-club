@@ -41,6 +41,8 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # OpenRouter 用量榜(or_tokens_day,真实 token 吞吐)需要 key;不映射进来 run.mjs 就看不到 → 跳过用量。
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      # gated HF 模型卡(Llama 等);Environment 里可选加 HF_TOKEN,没有则只富集公开卡。
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - uses: actions/checkout@v5
 
@@ -60,6 +62,13 @@ jobs:
 
       - name: Collect
         run: node src/run.mjs
+
+      # HF 模型卡 intro:本机常连不上 huggingface.co,放 CI 补。幂等(已有 intro 跳过),
+      # 失败不挡推库——下次再补。其它 kind 的 intro 本地/历史已齐,不必每次全跑。
+      - name: Enrich HuggingFace intros
+        if: always()
+        continue-on-error: true
+        run: node src/enrich.mjs huggingface
 
       - name: Push data.db to R2
         # 即便采集部分失败(run.mjs 非零退出),已落盘的数据也要推上去 —— 用 always()。
