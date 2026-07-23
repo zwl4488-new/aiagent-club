@@ -24,13 +24,23 @@ function lastmodFromMetrics(metrics) {
 }
 
 /**
+ * Astro `build.format: 'directory'` → 真页在 /foo/index.html。
+ * OSS/CF 对无尾斜杠返回 302→/foo/;sitemap 应写最终 URL,避免 Google 测到一堆跳转。
+ * @param {string} path
+ */
+function pagePath(path) {
+  if (!path || path === '/') return '/'
+  return path.endsWith('/') ? path : `${path}/`
+}
+
+/**
  * @param {string} path
  * @param {string} lastmod
  */
 function urlEntry(path, lastmod) {
   return (
     `  <url>\n` +
-    `    <loc>${SITE}${encodeURI(path)}</loc>\n` +
+    `    <loc>${SITE}${encodeURI(pagePath(path))}</loc>\n` +
     `    <lastmod>${lastmod}</lastmod>\n` +
     `  </url>`
   )
@@ -45,18 +55,18 @@ export async function GET() {
   for (const path of [
     '/',
     '/zh/',
-    '/projects',
-    '/zh/projects',
-    '/changes',
-    '/zh/changes',
-    '/pricing',
-    '/zh/pricing',
-    '/methodology',
-    '/zh/methodology',
-    '/search',
-    '/zh/search',
-    '/browse',
-    '/zh/browse',
+    '/projects/',
+    '/zh/projects/',
+    '/changes/',
+    '/zh/changes/',
+    '/pricing/',
+    '/zh/pricing/',
+    '/methodology/',
+    '/zh/methodology/',
+    '/search/',
+    '/zh/search/',
+    '/browse/',
+    '/zh/browse/',
   ]) {
     entries.push(urlEntry(path, siteDay))
   }
@@ -66,15 +76,15 @@ export async function GET() {
       lastmodFromMetrics(
         Object.assign({}, ...p.memberPages.map((m) => m.metrics || {})),
       ) || siteDay
-    entries.push(urlEntry(`/project/${p.slug}`, lm))
-    entries.push(urlEntry(`/zh/project/${p.slug}`, lm))
+    entries.push(urlEntry(`/project/${p.slug}/`, lm))
+    entries.push(urlEntry(`/zh/project/${p.slug}/`, lm))
   }
 
   for (const p of pages) {
     if (!p.intro) continue // 薄页已 noindex,不进 sitemap
     const lm = lastmodFromMetrics(p.metrics) || day(p.first_seen) || siteDay
-    entries.push(urlEntry(`/p/${p.slug}`, lm))
-    entries.push(urlEntry(`/zh/p/${p.slug}`, lm))
+    entries.push(urlEntry(`/p/${p.slug}/`, lm))
+    entries.push(urlEntry(`/zh/p/${p.slug}/`, lm))
   }
 
   const body =
