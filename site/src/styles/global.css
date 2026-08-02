@@ -430,23 +430,27 @@ footer.site a { color: var(--accent); }
 .page-title { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; margin: 1.2rem 0 0.2rem; }
 
 /* ── 旗舰指数:小卡片网格(#3) ── */
-.idxcards { border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 12px; padding: 0.85rem 1rem 0.95rem; }
+/* minmax(0,1fr):默认 1fr 下限是 min-content,双列卡会撑破 home-main 叠到右栏 Movers 上。 */
+.idxcards { border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 12px; padding: 0.85rem 1rem 0.95rem; min-width: 0; }
 .idxcards-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
-.idxcards-head h3 { font-size: 1.08rem; margin: 0; letter-spacing: -0.01em; }
-.idxcards-grid { list-style: none; margin: 0.5rem 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; }
-.ixc { display: block; border: 1px solid var(--border); border-radius: 9px; padding: 0.55rem 0.65rem; text-decoration: none; color: var(--fg); transition: border-color 0.15s, background 0.15s; }
+.idxcards-head h3 { font-size: 1.08rem; margin: 0; letter-spacing: -0.01em; min-width: 0; }
+.idxcards-grid { list-style: none; margin: 0.5rem 0 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.55rem; }
+.idxcards-grid > li { min-width: 0; }
+.ixc { display: block; border: 1px solid var(--border); border-radius: 9px; padding: 0.55rem 0.65rem; text-decoration: none; color: var(--fg); transition: border-color 0.15s, background 0.15s; min-width: 0; overflow: hidden; }
 .ixc:hover { border-color: var(--accent); background: var(--bg-soft); }
-.ixc-top { display: flex; align-items: baseline; gap: 0.35rem; }
-.ixc-rank { font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; font-size: 0.8rem; }
-.ixc-name { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-.ixc-badges { display: inline-flex; gap: 0.15rem; flex-shrink: 0; }
-.ixc-score { display: flex; align-items: center; gap: 0.4rem; margin: 0.35rem 0 0.25rem; }
-.ixc-score .idx-bar { flex: 1; height: 6px; }
-.ixc-score b { font-variant-numeric: tabular-nums; font-weight: 750; font-size: 0.95rem; }
+.ixc-top { display: flex; align-items: baseline; gap: 0.35rem; min-width: 0; }
+.ixc-rank { font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; font-size: 0.8rem; flex-shrink: 0; }
+.ixc-name { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+.ixc-badges { display: inline-flex; gap: 0.15rem; flex-shrink: 0; max-width: 45%; overflow: hidden; }
+.ixc-score { display: flex; align-items: center; gap: 0.4rem; margin: 0.35rem 0 0.25rem; min-width: 0; }
+.ixc-score .idx-bar { flex: 1; height: 6px; min-width: 0; }
+.ixc-score b { font-variant-numeric: tabular-nums; font-weight: 750; font-size: 0.95rem; flex-shrink: 0; }
 .ixc-stat { display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 0.72rem; color: var(--fg-soft); font-variant-numeric: tabular-nums; }
 .ixc-stat .up { color: #16a34a; }
 :root[data-theme="dark"] .ixc-stat .up { color: #4ade80; }
 @media (prefers-color-scheme: dark) { .ixc-stat .up { color: #4ade80; } }
+/* 首页两栏时左栏偏窄,指数改单列;更宽再恢复双列 */
+@media (max-width: 1100px) { .idxcards-grid { grid-template-columns: 1fr; } }
 @media (max-width: 520px) { .idxcards-grid { grid-template-columns: 1fr; } }
 
 /* ── 卡片内小折线(#2) ── */
