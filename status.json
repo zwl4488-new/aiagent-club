@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-16T02:40:14.570Z",
+  "generated_at": "2026-08-16T14:07:56.432Z",
   "latest_snapshot": "2026-08-16",
   "entities": 1639,
   "metrics_rows": 634647,
@@ -18,56 +18,56 @@
       "environment": "actions",
       "status": "partial",
       "rows_written": 5516,
-      "started_at": "2026-08-16T02:34:05.521Z",
-      "finished_at": "2026-08-16T02:38:03.717Z"
+      "started_at": "2026-08-16T14:01:05.920Z",
+      "finished_at": "2026-08-16T14:05:03.096Z"
     },
     {
       "source": "huggingface",
       "environment": "actions",
       "status": "ok",
       "rows_written": 48,
-      "started_at": "2026-08-16T02:39:46.003Z",
-      "finished_at": "2026-08-16T02:39:52.290Z"
+      "started_at": "2026-08-16T14:07:18.482Z",
+      "finished_at": "2026-08-16T14:07:24.775Z"
     },
     {
       "source": "modelscope",
       "environment": "actions",
       "status": "ok",
       "rows_written": 32,
-      "started_at": "2026-08-16T02:39:17.914Z",
-      "finished_at": "2026-08-16T02:39:42.079Z"
+      "started_at": "2026-08-16T14:06:42.991Z",
+      "finished_at": "2026-08-16T14:07:14.586Z"
     },
     {
       "source": "npm",
       "environment": "actions",
       "status": "partial",
       "rows_written": 178,
-      "started_at": "2026-08-16T02:38:03.717Z",
-      "finished_at": "2026-08-16T02:38:33.835Z"
+      "started_at": "2026-08-16T14:05:03.096Z",
+      "finished_at": "2026-08-16T14:05:32.494Z"
     },
     {
       "source": "openrouter",
       "environment": "actions",
       "status": "ok",
       "rows_written": 2739,
-      "started_at": "2026-08-16T02:39:15.990Z",
-      "finished_at": "2026-08-16T02:39:17.914Z"
+      "started_at": "2026-08-16T14:06:41.614Z",
+      "finished_at": "2026-08-16T14:06:42.991Z"
     },
     {
       "source": "pypi",
       "environment": "actions",
-      "status": "ok",
-      "rows_written": 162,
-      "started_at": "2026-08-16T02:38:33.835Z",
-      "finished_at": "2026-08-16T02:39:15.990Z"
+      "status": "partial",
+      "rows_written": 147,
+      "started_at": "2026-08-16T14:05:32.494Z",
+      "finished_at": "2026-08-16T14:06:41.614Z"
     },
     {
       "source": "vscode",
       "environment": "actions",
       "status": "ok",
       "rows_written": 30,
-      "started_at": "2026-08-16T02:39:42.079Z",
-      "finished_at": "2026-08-16T02:39:46.003Z"
+      "started_at": "2026-08-16T14:07:14.586Z",
+      "finished_at": "2026-08-16T14:07:18.482Z"
     }
   ]
 }
