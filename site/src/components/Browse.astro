@@ -1,6 +1,5 @@
 ---
 import Base from '../layouts/Base.astro'
-import SearchBox from './SearchBox.astro'
 import { buildEntityPages, PRIMARY } from '../lib/detail.mjs'
 import { t } from '../lib/i18n.mjs'
 import { compact } from '../lib/format.mjs'
@@ -28,14 +27,6 @@ const title = `${s.browseTitle} | aiagent.club`
 <Base locale={locale} title={title} description={s.browseIntro} path={path} altEn={locale === 'zh' ? otherPath : path} altZh={locale === 'zh' ? path : otherPath}>
   <h1 class="page-title">{s.browseTitle}</h1>
 
-  <nav class="topnav">
-    <a href={`${base}/`}>{s.nav.rankings}</a>
-    <a href={`${base}/changes`}>{s.nav.changelog}</a>
-    <a href={`${base}/pricing`}>{s.nav.pricing}</a>
-    <a href={`${base}/browse`} aria-current="page">{s.nav.browse}</a>
-    <a href={`${base}/methodology`}>{s.nav.methodology}</a>
-    <a href={`${base}/search`}>{s.nav.search}</a>
-  </nav>
 
   <p class="intro">{s.browseIntro}</p>
 

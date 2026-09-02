@@ -1,0 +1,23 @@
+---
+const { s, adoption, momentum, eventCount = 0 } = Astro.props
+---
+<div class="pulse-grid">
+  <article class="pulse-card">
+    <p>{s.radar.adoption}</p>
+    <strong>{adoption.value}</strong>
+    <h3>{adoption.name}</h3>
+    <span>{s.radar.adoptionNote}</span>
+  </article>
+  <article class="pulse-card">
+    <p>{s.radar.momentum}</p>
+    <strong>{momentum.value}</strong>
+    <h3>{momentum.name}</h3>
+    <span>{s.radar.momentumNote}</span>
+  </article>
+  <article class="pulse-card">
+    <p>{s.radar.changes}</p>
+    <strong>{eventCount}</strong>
+    <h3>{s.radar.changesUnit}</h3>
+    <span>{s.radar.changesNote}</span>
+  </article>
+</div>

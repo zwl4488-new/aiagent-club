@@ -1,0 +1,126 @@
+---
+import Base from '../layouts/Base.astro'
+import { buildProjects } from '../lib/projects.mjs'
+import { t } from '../lib/i18n.mjs'
+
+const { locale = 'en' } = Astro.props
+const s = t(locale)
+const base = locale === 'zh' ? '/zh' : ''
+const path = `${base}/compare`
+const otherPath = locale === 'zh' ? '/compare' : '/zh/compare'
+const projects = (await buildProjects()).filter((p) => p.score > 0).slice(0, 80).map((p) => ({
+  slug: p.slug,
+  name: p.name,
+  score: p.score,
+  usage: Math.round(p.usage),
+  momentum: p.momentum,
+  stars: p.stars,
+  coverage: [p.usage > 0, p.momentum > 0, p.stars > 0].filter(Boolean).length,
+  kinds: p.kinds,
+}))
+const title = `${s.compare.title} | aiagent.club`
+---
+<Base locale={locale} title={title} description={s.compare.intro} path={path} altEn={locale === 'zh' ? otherPath : path} altZh={locale === 'zh' ? path : otherPath}>
+  <h1 class="page-title">{s.compare.title}</h1>
+  <p class="intro">{s.compare.intro}</p>
+
+  <section class="compare-picker" aria-labelledby="compare-picker-title">
+    <div class="compare-picker-head">
+      <h2 id="compare-picker-title">{s.compare.picker}</h2>
+      <span><b id="compare-count">0</b>/4 {s.compare.selected}</span>
+    </div>
+    <div class="compare-options" id="compare-options">
+      {projects.map((p) => <button type="button" data-slug={p.slug} aria-pressed="false">{p.name}</button>)}
+    </div>
+    <p class="compare-limit" id="compare-limit" hidden>{s.compare.limit}</p>
+  </section>
+
+  <div id="compare-empty" class="empty-state">{s.compare.empty}</div>
+  <div id="compare-table" class="table-scroll compare-table" aria-live="polite"></div>
+  <footer class="site">{s.footer}</footer>
+
+  <script is:inline define:vars={{ projects, base, tx: s.compare }}>
+    ;(function () {
+      const state = (window.__aiacCompare = window.__aiacCompare || { bound: false, selected: [] })
+      const bySlug = new Map(projects.map((p) => [p.slug, p]))
+      const number = new Intl.NumberFormat(document.documentElement.lang === 'zh' ? 'zh-CN' : 'en')
+
+      function el(tag, text, cls) {
+        const node = document.createElement(tag)
+        if (text != null) node.textContent = text
+        if (cls) node.className = cls
+        return node
+      }
+
+      function initCompare() {
+        const options = document.getElementById('compare-options')
+        const table = document.getElementById('compare-table')
+        const empty = document.getElementById('compare-empty')
+        const count = document.getElementById('compare-count')
+        const limit = document.getElementById('compare-limit')
+        if (!options || options.dataset.bound) return
+        options.dataset.bound = '1'
+
+        const fromUrl = (new URLSearchParams(location.search).get('p') || '').split(',').filter((slug) => bySlug.has(slug)).slice(0, 4)
+        state.selected = fromUrl.length ? fromUrl : projects.slice(0, 3).map((p) => p.slug)
+
+        function cell(row, value, cls) {
+          const td = el('td', value, cls)
+          row.appendChild(td)
+        }
+
+        function render() {
+          const selected = state.selected.map((slug) => bySlug.get(slug)).filter(Boolean)
+          count.textContent = String(selected.length)
+          options.querySelectorAll('button').forEach((btn) => btn.setAttribute('aria-pressed', state.selected.includes(btn.dataset.slug) ? 'true' : 'false'))
+          empty.hidden = selected.length > 0
+          table.hidden = selected.length === 0
+          table.textContent = ''
+          if (!selected.length) return
+
+          const t = el('table')
+          const head = el('thead'), hr = el('tr')
+          cell(hr, tx.project)
+          selected.forEach((p) => {
+            const th = el('th')
+            const a = el('a', p.name); a.href = base + '/project/' + p.slug
+            th.appendChild(a); hr.appendChild(th)
+          })
+          head.appendChild(hr); t.appendChild(head)
+          const body = el('tbody')
+          const rows = [
+            [tx.score, (p) => String(p.score)],
+            [tx.adoption, (p) => number.format(p.usage)],
+            [tx.momentum, (p) => p.momentum ? '+' + number.format(p.momentum) : '—'],
+            [tx.attention, (p) => p.stars ? number.format(p.stars) : '—'],
+            [tx.coverage, (p) => `${p.coverage}/3`],
+            [tx.sources, (p) => p.kinds.join(' · ')],
+          ]
+          rows.forEach(([label, value]) => {
+            const tr = el('tr'); cell(tr, label)
+            selected.forEach((p) => cell(tr, value(p)))
+            body.appendChild(tr)
+          })
+          t.appendChild(body); table.appendChild(t)
+          const params = new URLSearchParams(location.search)
+          params.set('p', state.selected.join(','))
+          history.replaceState(history.state, '', location.pathname + '?' + params)
+        }
+
+        options.addEventListener('click', (event) => {
+          const btn = event.target.closest('button[data-slug]')
+          if (!btn) return
+          const slug = btn.dataset.slug
+          if (state.selected.includes(slug)) state.selected = state.selected.filter((x) => x !== slug)
+          else if (state.selected.length < 4) state.selected = [...state.selected, slug]
+          else { limit.hidden = false; return }
+          limit.hidden = true
+          render()
+        })
+        render()
+      }
+      if (!state.bound) { state.bound = true; document.addEventListener('astro:page-load', initCompare) }
+      initCompare()
+    })()
+  </script>
+</Base>

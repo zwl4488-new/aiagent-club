@@ -28,11 +28,11 @@ async function fonts() {
   return _fonts
 }
 
-const ORANGE = '#ea580c'
-const ORANGE_HI = '#fb923c'
-const INK = '#1c1714'
-const INK2 = '#6b635c'
-const TRACK = '#efe6dd'
+const ORANGE = '#0f6b4f'
+const ORANGE_HI = '#24a46d'
+const INK = '#17211c'
+const INK2 = '#68736c'
+const TRACK = '#dce2dd'
 const ARROW =
   'data:image/svg+xml;base64,' +
   Buffer.from(
@@ -50,10 +50,10 @@ const STR = {
   en: {
     badge: 'updated daily',
     title: 'The AI Agent Index',
-    sub: 'Hype vs. real usage · momentum · attention',
-    foot: (n) => `${n} projects · ranked by real traction`,
+    sub: 'Observed adoption · momentum · attention',
+    foot: (n) => `${n} projects · independent adoption intelligence`,
     score: 'Score',
-    usage: 'Usage',
+    usage: 'Adoption',
     momentum: 'Momentum',
     attention: 'Attention',
     rankOf: (r, t) => `#${r} / ${t}`,
@@ -62,10 +62,10 @@ const STR = {
   zh: {
     badge: '每日更新',
     title: 'AI Agent 指数',
-    sub: '热度 vs 真实使用 · 动量 · 关注度',
-    foot: (n) => `${n} 个项目 · 按真实生命力排序`,
+    sub: '可观测采用度 · 动量 · 关注度',
+    foot: (n) => `${n} 个项目 · 独立采用度情报`,
     score: '综合分',
-    usage: '真实使用',
+    usage: '采用度',
     momentum: '动量',
     attention: '关注度',
     rankOf: (r, t) => `第 ${r} / ${t}`,
@@ -84,9 +84,9 @@ const SHAPES = {
 const shell = (c, height, children) =>
   e('div', {
     position: 'relative', display: 'flex', flexDirection: 'column', width: '100%', height: '100%',
-    padding: c.pad, backgroundColor: '#fdf8f2', backgroundImage: 'linear-gradient(155deg, #fffdfb 0%, #fdeede 100%)', fontFamily: 'Noto',
+    padding: c.pad, backgroundColor: '#f4f6f2', backgroundImage: 'linear-gradient(155deg, #ffffff 0%, #edf4ee 100%)', fontFamily: 'Noto',
   },
-    e('div', { position: 'absolute', top: -240, right: -180, width: 780, height: 780, borderRadius: 780, backgroundImage: 'radial-gradient(circle, rgba(251,146,60,0.42) 0%, rgba(251,146,60,0.0) 60%)' }),
+    e('div', { position: 'absolute', top: -240, right: -180, width: 780, height: 780, borderRadius: 780, backgroundImage: 'radial-gradient(circle, rgba(216,255,79,0.42) 0%, rgba(216,255,79,0.0) 60%)' }),
     ...children,
   )
 
@@ -138,7 +138,7 @@ function projectTree(c, s, p) {
       e('div', { flexShrink: 0, width: c.scoreW, fontSize: c.scoreFS, fontWeight: 700, color: on ? ORANGE : '#c9beb4' }, on ? String(val) : '—'))
   const badges = e('div', { display: 'flex', alignItems: 'center', flexShrink: 0, marginTop: 4, marginBottom: c.autoH ? 40 : 22 },
     ...p.kinds.filter((k) => KIND[k]).map((k) =>
-      e('div', { display: 'flex', flexShrink: 0, marginRight: 12, padding: '6px 16px', borderRadius: 999, backgroundColor: '#f3e4d8', fontSize: c.badgeFS - 2, fontWeight: 700, color: '#9a3412' }, KIND[k])))
+      e('div', { display: 'flex', flexShrink: 0, marginRight: 12, padding: '6px 16px', borderRadius: 999, backgroundColor: '#e7f1e9', fontSize: c.badgeFS - 2, fontWeight: 700, color: '#0f6b4f' }, KIND[k])))
   const header = [
     brandRow(c, s, c.autoH ? 26 : 16),
     e('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexShrink: 0 },

@@ -59,6 +59,8 @@ export async function GET() {
     '/zh/projects/',
     '/changes/',
     '/zh/changes/',
+    '/compare/',
+    '/zh/compare/',
     '/pricing/',
     '/zh/pricing/',
     '/methodology/',

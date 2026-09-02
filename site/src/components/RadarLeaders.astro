@@ -1,0 +1,20 @@
+---
+import { compact } from '../lib/format.mjs'
+const { rows = [], s, base = '' } = Astro.props
+---
+<section class="radar-index-card">
+  <div class="radar-section-heading compact">
+    <div><p class="radar-eyebrow">{s.radar.indexEyebrow}</p><h2>{s.radar.leaders}</h2></div>
+    <a href={`${base}/projects`}>{s.radar.viewAll} →</a>
+  </div>
+  <div class="radar-leader-list">
+    {rows.map((project, index) => (
+      <a href={`${base}/project/${project.slug}`}>
+        <span class="radar-leader-rank">{String(index + 1).padStart(2, '0')}</span>
+        <span class="radar-leader-name"><strong>{project.name}</strong><small>{project.usage > 0 ? `${compact(project.usage)} ${s.index.usage}` : project.kinds.join(' · ')}</small></span>
+        <span class="radar-leader-score">{project.score}<small>{project.momentum > 0 ? `▲ ${compact(project.momentum)}` : '—'}</small></span>
+      </a>
+    ))}
+  </div>
+  <a class="radar-compare-cta" href={`${base}/compare?p=${rows.slice(0, 4).map((p) => p.slug).join(',')}`}>{s.radar.compare}<span>↗</span></a>
+</section>

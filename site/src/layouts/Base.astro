@@ -1,6 +1,5 @@
 ---
 import '../styles/global.css'
-import { ClientRouter } from 'astro:transitions'
 import Header from '../components/Header.astro'
 import { t } from '../lib/i18n.mjs'
 // props: locale ('en'|'zh'), title, description, path (当前页路径)
@@ -8,12 +7,13 @@ import { t } from '../lib/i18n.mjs'
 //        jsonld: 本页额外的 schema.org 节点(对象或数组),并入站点 @graph。
 //        ogImage: 本页社交预览图路径(横版卡,给 og:image);默认首页指数卡。
 //        noindex: 薄页(无独特正文)设 true → robots noindex,follow(不收录本页但仍跟随链接)。
-const { locale = 'en', title, description, path = '/', altEn = '/', altZh = '/zh/', jsonld = null, ogImage, noindex = false } = Astro.props
+const { locale = 'en', title, description, path = '/', altEn = '/', altZh = '/zh/', jsonld = null, ogImage, noindex = false, wide = false } = Astro.props
 const SITE = 'https://www.aiagent.club'
 const ogImg = SITE + (ogImage ?? `/og/index-h-${locale === 'zh' ? 'zh' : 'en'}.png`)
 const s = t(locale)
 const base = locale === 'zh' ? '/zh' : ''
 const otherPath = locale === 'zh' ? altEn : altZh // 本页的另一语言 URL
+const themeColor = wide ? '#0f6b4f' : '#ea580c'
 
 // 站点级结构化数据:WebSite + Organization,每页都带;详情页等再追加自己的节点(如 Dataset)。
 const orgId = `${SITE}/#org`
@@ -25,8 +25,8 @@ const baseGraph = [
     name: 'aiagent.club',
     description:
       locale === 'zh'
-        ? 'AI agent 生态的每日时序数据仪器:热度 vs 真实使用、动量信号。'
-        : 'A daily time-series instrument for the AI agent ecosystem: hype vs. real usage, and momentum.',
+        ? 'AI Agent 生态的每日采用度情报：可观测采用信号、增长动量与关注度。'
+        : 'Daily AI agent adoption intelligence: observed adoption signals, momentum, and attention.',
     inLanguage: locale === 'zh' ? 'zh-CN' : 'en',
     publisher: { '@id': orgId },
   },
@@ -53,7 +53,7 @@ const jsonLdText = JSON.stringify({ '@context': 'https://schema.org', '@graph': 
     <link rel="alternate" hreflang="en" href={SITE + altEn} />
     <link rel="alternate" hreflang="zh" href={SITE + altZh} />
     <link rel="alternate" hreflang="x-default" href={SITE + altEn} />
-    <meta name="theme-color" content="#ea580c" />
+    <meta name="theme-color" content={themeColor} />
     <!-- 社交分享预览:横版指数/项目卡(构建期生成,每次部署刷新)。 -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="aiagent.club" />
@@ -75,15 +75,13 @@ const jsonLdText = JSON.stringify({ '@context': 'https://schema.org', '@graph': 
       const saved = localStorage.getItem('theme')
       if (saved === 'dark' || saved === 'light') document.documentElement.dataset.theme = saved
     </script>
-    <!-- SPA 式导航:/ ↔ /zh/ 无整页刷新;URL 结构与 SEO 不变。 -->
-    <ClientRouter />
   </head>
   <body>
-    <Header locale={locale} base={base} otherPath={otherPath} s={s} />
-    <div class="wrap">
+    <Header locale={locale} base={base} otherPath={otherPath} path={path} s={s} radar={wide} />
+    <div class:list={['wrap', { wide }]}>
       <slot />
     </div>
-    <!-- 深浅主题:与语言独立。ClientRouter 切页会重置 <html>,故每次导航重应用 + 重绑按钮。 -->
+    <!-- 深浅主题:与语言独立。普通页面跳转会在首帧脚本中恢复用户选择。 -->
     <script is:inline>
       function applyTheme() {
         const root = document.documentElement
@@ -105,8 +103,6 @@ const jsonLdText = JSON.stringify({ '@context': 'https://schema.org', '@graph': 
           root.setAttribute('data-mode', next)
         })
       }
-      document.addEventListener('astro:after-swap', applyTheme)
-      document.addEventListener('astro:page-load', () => { applyTheme(); bindToggle() })
       if (document.readyState !== 'loading') { applyTheme(); bindToggle() }
       else document.addEventListener('DOMContentLoaded', () => { applyTheme(); bindToggle() })
     </script>

@@ -1,17 +1,24 @@
 ---
 // 首页 Hero:彩色渐变横幅 + 标题 + 一句话定位 + 数据条。
-// props: s(翻译), ov(overview 概况)
-const { s, ov } = Astro.props
+// Radar 首屏。统计条由首页单独渲染，让首屏搜索成为唯一主动作。
+const { s, ov, base = '' } = Astro.props
 ---
 <section class="hero">
   <div class="hero-inner">
+    <div class="hero-kicker"><span class="live-dot"></span>{s.snapshot} {ov.latest}</div>
     <h1 class="hero-title">{s.heroTitle}</h1>
     <p class="hero-sub">{s.heroSub}</p>
-    <div class="hero-stats">
-      <div><b>{ov.entities}</b><span>{s.entities}</span></div>
-      <div><b>{ov.metrics}</b><span>{s.dataPoints}</span></div>
-      <div><b>{ov.days}</b><span>{s.days}</span></div>
-      <div><b>{ov.latest}</b><span>{s.snapshot}</span></div>
+    <form class="hero-search" action={`${base}/search`} method="get" role="search">
+      <label class="sr-only" for="hero-q">{s.heroSearch.label}</label>
+      <input id="hero-q" name="q" type="search" placeholder={s.heroSearch.placeholder} autocomplete="off" />
+      <button type="submit">{s.heroSearch.action}</button>
+    </form>
+    <div class="hero-quick" aria-label={s.heroSearch.popular}>
+      <span>{s.heroSearch.popular}</span>
+      <a href={`${base}/search?q=coding`}>{s.heroSearch.coding}</a>
+      <a href={`${base}/search?q=mcp`}>{s.heroSearch.mcp}</a>
+      <a href={`${base}/search?q=browser`}>{s.heroSearch.browser}</a>
+      <a href={`${base}/search?q=observability`}>{s.heroSearch.observability}</a>
     </div>
   </div>
 </section>

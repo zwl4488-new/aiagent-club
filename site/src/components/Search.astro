@@ -13,14 +13,6 @@ const title = `${s.search.title} | aiagent.club`
 <Base locale={locale} title={title} description={s.search.hint} path={path} altEn={locale === 'zh' ? otherPath : path} altZh={locale === 'zh' ? path : otherPath}>
   <h1 class="page-title">{s.search.title}</h1>
 
-  <nav class="topnav">
-    <a href={`${base}/`}>{s.nav.rankings}</a>
-    <a href={`${base}/changes`}>{s.nav.changelog}</a>
-    <a href={`${base}/pricing`}>{s.nav.pricing}</a>
-    <a href={`${base}/browse`}>{s.nav.browse}</a>
-    <a href={`${base}/methodology`}>{s.nav.methodology}</a>
-    <a href={`${base}/search`} aria-current="page">{s.nav.search}</a>
-  </nav>
 
   <div class="search-box">
     <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder={s.search.placeholder} aria-label={s.search.title} />

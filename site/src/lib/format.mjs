@@ -24,3 +24,19 @@ export function full(n) {
   if (n == null || !Number.isFinite(n)) return '—'
   return n.toLocaleString('en-US')
 }
+
+const PRICE_FORMAT = new Intl.NumberFormat('en-US', {
+  maximumSignificantDigits: 6,
+  useGrouping: true,
+})
+
+/**
+ * 每百万 token 美元价格。用有效数字消除 IEEE-754 浮点尾差，同时保留极小价格。
+ * 负值是采集层的“无价格”哨兵，不应作为金额展示。
+ * @param {number|undefined|null} n
+ * @returns {string}
+ */
+export function price(n) {
+  if (n == null || !Number.isFinite(n) || n < 0) return '—'
+  return PRICE_FORMAT.format(n)
+}

@@ -1,0 +1,71 @@
+---
+import Base from '../layouts/Base.astro'
+import { buildProjects } from '../lib/projects.mjs'
+import { t } from '../lib/i18n.mjs'
+
+const { locale = 'en' } = Astro.props
+const s = t(locale)
+const base = locale === 'zh' ? '/zh' : ''
+const path = `${base}/watchlist`
+const otherPath = locale === 'zh' ? '/watchlist' : '/zh/watchlist'
+const projects = (await buildProjects()).map((p) => ({ slug: p.slug, name: p.name, score: p.score, kinds: p.kinds }))
+const title = `${s.watchlist.title} | aiagent.club`
+---
+<Base locale={locale} title={title} description={s.watchlist.intro} path={path} altEn={locale === 'zh' ? otherPath : path} altZh={locale === 'zh' ? path : otherPath} noindex={true}>
+  <h1 class="page-title">{s.watchlist.title}</h1>
+  <p class="intro">{s.watchlist.intro}</p>
+  <p class="local-note">● {s.watchlist.local}</p>
+
+  <div id="watchlist-empty" class="empty-state" hidden>
+    <p>{s.watchlist.empty}</p>
+    <a href={`${base}/projects`}>{s.watchlist.browse}</a>
+  </div>
+  <ol id="watchlist-items" class="watchlist-items"></ol>
+  <p id="watchlist-actions" class="watchlist-actions" hidden><a id="watchlist-compare" href={`${base}/compare`}>{s.watchlist.compare} →</a></p>
+  <footer class="site">{s.footer}</footer>
+
+  <script is:inline define:vars={{ projects, base, tx: s.watchlist }}>
+    ;(function () {
+      const KEY = 'aiagent.club.watchlist.v1'
+      const state = (window.__aiacWatchlist = window.__aiacWatchlist || { bound: false })
+      const bySlug = new Map(projects.map((p) => [p.slug, p]))
+      function read() { try { return JSON.parse(localStorage.getItem(KEY) || '[]') } catch (_) { return [] } }
+      function write(items) { localStorage.setItem(KEY, JSON.stringify(items)) }
+
+      function initWatchlist() {
+        const list = document.getElementById('watchlist-items')
+        const empty = document.getElementById('watchlist-empty')
+        const actions = document.getElementById('watchlist-actions')
+        const compare = document.getElementById('watchlist-compare')
+        if (!list || list.dataset.bound) return
+        list.dataset.bound = '1'
+
+        function render() {
+          const slugs = read().filter((slug) => bySlug.has(slug))
+          list.textContent = ''
+          empty.hidden = slugs.length > 0
+          actions.hidden = slugs.length < 2
+          compare.href = base + '/compare?p=' + slugs.slice(0, 4).join(',')
+          slugs.forEach((slug) => {
+            const p = bySlug.get(slug)
+            const li = document.createElement('li')
+            const main = document.createElement('a'); main.href = base + '/project/' + p.slug; main.className = 'watch-main'
+            const name = document.createElement('b'); name.textContent = p.name
+            const meta = document.createElement('span'); meta.textContent = `${p.score} · ${p.kinds.join(' · ')}`
+            main.append(name, meta)
+            const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = tx.remove; remove.dataset.slug = slug
+            li.append(main, remove); list.appendChild(li)
+          })
+        }
+        list.addEventListener('click', (event) => {
+          const button = event.target.closest('button[data-slug]')
+          if (!button) return
+          write(read().filter((slug) => slug !== button.dataset.slug)); render()
+        })
+        render()
+      }
+      if (!state.bound) { state.bound = true; document.addEventListener('astro:page-load', initWatchlist) }
+      initWatchlist()
+    })()
+  </script>
+</Base>

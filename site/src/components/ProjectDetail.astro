@@ -5,7 +5,6 @@ import { SHOW_METRICS } from '../lib/detail.mjs'
 
 // props: project(buildProjectPages 的一条), s, base('' | '/zh'), poster(竖版海报 URL,仅 top-100 有)
 const { project: p, s, base = '', poster = null } = Astro.props
-const posterLabel = base === '/zh' ? '↓ 下载分享海报' : '↓ Download poster'
 const KIND = { github: 'GitHub', npm: 'npm', pypi: 'PyPI', huggingface: 'Hugging Face', openrouter: 'OpenRouter', modelscope: 'ModelScope', vscode: 'VS Code' }
 const ml = s.metricLabel
 const detailHref = (slug) => `${base}/p/${slug}`
@@ -15,6 +14,8 @@ const parts = [
   { label: s.project.momentum, pct: p.momPct, on: p.momentum > 0 },
   { label: s.project.attention, pct: p.attnPct, on: p.stars > 0 },
 ]
+const coverageCount = parts.filter((pt) => pt.on).length
+const confidence = coverageCount === 3 ? s.project.confidenceHigh : coverageCount === 2 ? s.project.confidenceMedium : s.project.confidenceLow
 ---
 <article class="detail proj">
   <nav class="crumb"><a href={`${base}/projects`}>{s.project.backIndex}</a></nav>
@@ -22,7 +23,19 @@ const parts = [
   <header class="detail-head">
     <div class="proj-badges">{p.kinds.filter((k) => KIND[k]).map((k) => <span class="idx-badge">{KIND[k]}</span>)}</div>
     <h1>{p.name}</h1>
-    <p class="rank-line">{s.project.inIndex(p.rank, p.total)}{poster && <a class="poster-dl" href={poster} download>{posterLabel}</a>}</p>
+    <p class="rank-line">
+      {s.project.inIndex(p.rank, p.total)}
+      {poster && <a class="poster-dl" href={poster} download>{s.project.poster}</a>}
+      <button
+        class="watch-button"
+        type="button"
+        data-watch-project
+        data-slug={p.slug}
+        data-label-add={s.project.watch}
+        data-label-added={s.project.watching}
+        aria-pressed="false"
+      >{s.project.watch}</button>
+    </p>
   </header>
 
   <div class="proj-score">
@@ -40,6 +53,14 @@ const parts = [
       ))}
     </div>
   </div>
+
+  <section class="confidence-card" aria-label={s.project.confidence}>
+    <div>
+      <b>{s.project.confidence}</b>
+      <span>{s.project.confidenceNote}</span>
+    </div>
+    <div class="confidence-value"><strong>{confidence}</strong><span>{coverageCount}/3</span></div>
+  </section>
 
   {p.intro && (
     <section class="about">
@@ -83,3 +104,30 @@ const parts = [
 
   <footer class="detail-foot"><a href={`${base}/projects`}>{s.project.backIndex}</a></footer>
 </article>
+
+<script is:inline>
+  ;(function () {
+    const KEY = 'aiagent.club.watchlist.v1'
+    const state = (window.__aiacWatchButtons = window.__aiacWatchButtons || { bound: false })
+    function read() { try { return JSON.parse(localStorage.getItem(KEY) || '[]') } catch (_) { return [] } }
+    function initWatchButtons() {
+      document.querySelectorAll('[data-watch-project]').forEach((button) => {
+        if (button.dataset.bound) return
+        button.dataset.bound = '1'
+        const update = () => {
+          const active = read().includes(button.dataset.slug)
+          button.setAttribute('aria-pressed', active ? 'true' : 'false')
+          button.textContent = active ? button.dataset.labelAdded : button.dataset.labelAdd
+        }
+        button.addEventListener('click', () => {
+          const items = read()
+          const next = items.includes(button.dataset.slug) ? items.filter((slug) => slug !== button.dataset.slug) : [...items, button.dataset.slug]
+          localStorage.setItem(KEY, JSON.stringify(next)); update()
+        })
+        update()
+      })
+    }
+    if (!state.bound) { state.bound = true; document.addEventListener('astro:page-load', initWatchButtons) }
+    initWatchButtons()
+  })()
+</script>

@@ -1,0 +1,22 @@
+---
+import { compact, full } from '../lib/format.mjs'
+const { rows = [], s, base = '', windowDays = 7 } = Astro.props
+const href = (entityId) => `${base}/p/${entityId.replace(':', '/')}`
+---
+<div class="radar-movers">
+  <div class="radar-table-head">
+    <span>{s.radar.rankProject}</span><span>{s.radar.signal}</span><span>{s.radar.gain(windowDays)}</span><span>{s.radar.growth}</span>
+  </div>
+  {rows.map((item, index) => {
+    const growth = item.pct == null ? '—' : `${(item.pct * 100).toFixed(item.pct < 0.1 ? 1 : 0)}%`
+    const signal = Math.min(100, Math.max(8, Math.round((item.pct ?? 0) * 500)))
+    return (
+      <a class="radar-mover-row" href={href(item.entity_id)}>
+        <span class="radar-project-cell"><b>{String(index + 1).padStart(2, '0')}</b><span><strong>{item.name}</strong><small>GitHub</small></span></span>
+        <span class="radar-signal"><i style={`width:${signal}%`}></i></span>
+        <strong class="radar-positive" title={full(item.delta)}>+{compact(item.delta)}</strong>
+        <span>{growth}</span>
+      </a>
+    )
+  })}
+</div>

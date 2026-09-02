@@ -1,12 +1,14 @@
 ---
 import Base from '../layouts/Base.astro'
 import Hero from './Hero.astro'
-import IndexCards from './IndexCards.astro'
 import RankCard from './RankCard.astro'
-import Movers from './Movers.astro'
 import HypeGap from './HypeGap.astro'
+import RadarPulse from './RadarPulse.astro'
+import RadarMovers from './RadarMovers.astro'
+import RadarLeaders from './RadarLeaders.astro'
 import { overview, ranking, movers, latestMap, seriesByKind } from '../lib/data.mjs'
 import { hypeVsUsage, buildProjects } from '../lib/projects.mjs'
+import { buildEvents } from '../lib/events.mjs'
 import { t } from '../lib/i18n.mjs'
 import { compact, full } from '../lib/format.mjs'
 
@@ -25,19 +27,8 @@ const path = locale === 'zh' ? '/zh/' : '/'
 const base = locale === 'zh' ? '/zh' : ''
 
 const ov = await overview()
-const KINDB = { github: 'GH', npm: 'npm', pypi: 'PyPI', huggingface: 'HF', openrouter: 'OR', modelscope: 'MS', vscode: 'VSC' }
-
 // 旗舰:统一项目综合指数(top 10)。
 const projects = await buildProjects()
-const indexRows = projects.slice(0, 10).map((p) => ({
-  name: p.name,
-  href: `${base}/project/${p.slug}`,
-  value: p.score,
-  bar: p.score,
-  badges: p.kinds.filter((k) => KINDB[k]).map((k) => KINDB[k]),
-  title: `score ${p.score}`,
-}))
-
 // 各源榜(每源 top 10)→ 卡片行,含小折线(spark 走有历史的指标)。长尾在 /browse。
 const detailHref = (entityId) => `${base}/p/${entityId.replace(':', '/')}`
 function srcRows(rows, key, sparkMap) {
@@ -70,39 +61,84 @@ const [spOr, spGh, spNpm, spPypi, spVs, spMs, spHf] = await Promise.all([
 ])
 
 // 右栏洞察:本周异动(7 天 star 增量)+ 热度落差。
-const starMovers = (await movers('github', 'stars', 7)).sort((a, b) => b.delta - a.delta).slice(0, 8)
+const moverWindows = [7, 30, 90]
+const moverEntries = await Promise.all(moverWindows.map(async (days) => {
+  const rows = (await movers('github', 'stars', days)).sort((a, b) => b.delta - a.delta).slice(0, 8)
+  return [days, rows]
+}))
+const moversByWindow = Object.fromEntries(moverEntries)
+const starMovers = moversByWindow[7]
 const [starMap, dlMonthMap, dlWeekMap] = await Promise.all([latestMap('stars'), latestMap('downloads_month'), latestMap('downloads_week')])
 const hype = hypeVsUsage(starMap, dlMonthMap, dlWeekMap)
 const overhyped = [...hype].sort((a, b) => b.gap - a.gap).slice(0, 6)
 const underrated = [...hype].sort((a, b) => a.gap - b.gap).slice(0, 6)
+const events7d = await buildEvents({ windowDays: 7 })
+const adoptionLeader = projects.reduce((best, p) => (p.usage > (best?.usage ?? -1) ? p : best), null)
+const momentumLeader = starMovers[0] ?? null
+const sourceCount = [orusage, gh, npm, pypi, vscode, modelscope, hf].filter((rows) => rows.length > 0).length
 ---
-<Base locale={locale} title={`aiagent.club — ${s.tagline}`} description={s.intro} path={path}>
-  <nav class="topnav">
-    <a href={`${base}/`} aria-current="page">{s.nav.rankings}</a>
-    <a href={`${base}/changes`}>{s.nav.changelog}</a>
-    <a href={`${base}/pricing`}>{s.nav.pricing}</a>
-    <a href={`${base}/browse`}>{s.nav.browse}</a>
-    <a href={`${base}/methodology`}>{s.nav.methodology}</a>
-    <a href={`${base}/search`}>{s.nav.search}</a>
-  </nav>
+<Base locale={locale} title={`aiagent.club — ${s.tagline}`} description={s.intro} path={path} wide={true}>
+  <div class="radar-home">
+  <Hero s={s} ov={ov} base={base} />
 
-  <Hero s={s} ov={ov} />
+  <section class="snapshot-bar" aria-label={s.snapshot}>
+    <div><strong>{projects.length}</strong><span>{s.unifiedProjects}</span></div>
+    <div><strong>{ov.entities}</strong><span>{s.sourceRecords}</span></div>
+    <div><strong>{ov.metrics}</strong><span>{s.observations}</span></div>
+    <div><strong>{sourceCount}</strong><span>{s.independentSources}</span></div>
+    <div class="snapshot-id"><span>{s.snapshot}</span><code>{ov.latest}</code></div>
+  </section>
 
-  <div class="home-grid">
-    <div class="home-main">
-      <IndexCards title={s.index.title} note={s.index.note} rows={projects.slice(0, 10)} s={s} base={base} moreHref={`${base}/projects`} moreLabel={s.index.full} />
-      <p class="poster-cta"><a href={`/og/index-v-${locale === 'zh' ? 'zh' : 'en'}.png`} download>{locale === 'zh' ? '↓ 下载指数海报（竖版分享图）' : '↓ Download the index poster'}</a></p>
-      {orusage.length > 0 && <RankCard title={s.orusage} rows={srcRows(orusage, 'or_tokens_day', spOr)} accent="#4f46e5" />}
-      <RankCard title={s.github} rows={srcRows(gh, 'stars', spGh)} accent="#d97706" />
-      <RankCard title={s.npm} rows={srcRows(npm, 'downloads_week', spNpm)} accent="#e11d48" />
-      <RankCard title={s.pypi} rows={srcRows(pypi, 'downloads_month', spPypi)} accent="#0284c7" />
-      {vscode.length > 0 && <RankCard title={s.vscode} rows={srcRows(vscode, 'vscode_installs', spVs)} accent="#7c3aed" />}
-      {hf.length > 0 && <RankCard title={s.hf} rows={srcRows(hf, 'hf_downloads', spHf)} accent="#0891b2" />}
-      {modelscope.length > 0 && <RankCard title={s.modelscope} rows={srcRows(modelscope, 'ms_downloads', spMs)} accent="#db2777" />}
+  <div class="radar-dashboard">
+    <div class="radar-main-column">
+      <section class="radar-section-block">
+        <div class="radar-section-heading">
+          <div><p class="radar-eyebrow">{s.radar.marketEyebrow}</p><h2>{s.radar.marketTitle}</h2></div>
+          <a href={`${base}/changes`}>{s.radar.openFeed} →</a>
+        </div>
+        {adoptionLeader && momentumLeader && (
+          <RadarPulse
+            s={s}
+            adoption={{ name: adoptionLeader.name, value: compact(adoptionLeader.usage) }}
+            momentum={{ name: momentumLeader.name, value: `+${compact(momentumLeader.delta)}` }}
+            eventCount={events7d.length}
+          />
+        )}
+      </section>
+
+      <section class="radar-section-block">
+        <div class="radar-section-heading">
+          <div><p class="radar-eyebrow">{s.radar.growthEyebrow}</p><h2>{s.radar.growthTitle}</h2></div>
+          <div class="radar-range-tabs" role="tablist" aria-label={s.radar.rangeLabel} data-radar-range>
+            {moverWindows.map((days, index) => (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={index === 0 ? 'true' : 'false'}
+                tabindex={index === 0 ? '0' : '-1'}
+                aria-controls={`movers-${days}`}
+                id={`movers-tab-${days}`}
+                data-range-button={days}
+              >{s.radar.ranges[days]}</button>
+            ))}
+          </div>
+        </div>
+        {moverWindows.map((days, index) => (
+          <div
+            id={`movers-${days}`}
+            role="tabpanel"
+            aria-labelledby={`movers-tab-${days}`}
+            data-range-panel={days}
+            hidden={index !== 0}
+          >
+            <RadarMovers rows={moversByWindow[days]} s={s} base={base} windowDays={days} />
+          </div>
+        ))}
+      </section>
     </div>
 
-    <aside class="home-side">
-      <Movers title={s.moversTitle} note={s.moversNote} rows={starMovers} gained={s.gained} now={s.now} base={base} />
+    <aside class="radar-side-column">
+      <RadarLeaders rows={projects.slice(0, 5)} s={s} base={base} />
       {overhyped.length > 0 && (
         <HypeGap
           title={s.hypeTitle}
@@ -119,6 +155,67 @@ const underrated = [...hype].sort((a, b) => a.gap - b.gap).slice(0, 6)
     </aside>
   </div>
 
+  <section class="radar-source-section">
+    <div class="radar-section-heading">
+      <div><p class="radar-eyebrow">{s.radar.signalsEyebrow}</p><h2>{s.radar.signalsTitle}</h2><p>{s.radar.signalsIntro}</p></div>
+      <a href={`${base}/browse`}>{s.seeAll}</a>
+    </div>
+    <div class="radar-source-grid">
+      {orusage.length > 0 && <RankCard title={s.orusage} rows={srcRows(orusage, 'or_tokens_day', spOr)} accent="#4f46e5" />}
+      <RankCard title={s.github} rows={srcRows(gh, 'stars', spGh)} accent="#d97706" />
+      <RankCard title={s.npm} rows={srcRows(npm, 'downloads_week', spNpm)} accent="#e11d48" />
+      <RankCard title={s.pypi} rows={srcRows(pypi, 'downloads_month', spPypi)} accent="#0284c7" />
+      {vscode.length > 0 && <RankCard title={s.vscode} rows={srcRows(vscode, 'vscode_installs', spVs)} accent="#7c3aed" />}
+      {hf.length > 0 && <RankCard title={s.hf} rows={srcRows(hf, 'hf_downloads', spHf)} accent="#0891b2" />}
+      {modelscope.length > 0 && <RankCard title={s.modelscope} rows={srcRows(modelscope, 'ms_downloads', spMs)} accent="#db2777" />}
+    </div>
+    <p class="poster-cta"><a href={`/og/index-v-${locale === 'zh' ? 'zh' : 'en'}.png`} download>{s.index.poster}</a></p>
+  </section>
+
   <p class="browse-cta"><a href={`${base}/browse`}>{s.browseAll(ov.entities)}</a></p>
   <footer class="site">{s.footer}</footer>
+  </div>
 </Base>
+
+<script>
+  function bindRadarRanges() {
+    document.querySelectorAll('[data-radar-range]').forEach((tabs) => {
+      if (!(tabs instanceof HTMLElement) || tabs.dataset.bound === 'true') return
+      tabs.dataset.bound = 'true'
+      const section = tabs.closest('.radar-section-block')
+      const buttons = [...tabs.querySelectorAll('[data-range-button]')]
+      const panels = [...(section?.querySelectorAll('[data-range-panel]') ?? [])]
+
+      const selectRange = (button) => {
+        const range = button.getAttribute('data-range-button')
+        buttons.forEach((item) => {
+          const active = item === button
+          item.setAttribute('aria-selected', String(active))
+          item.setAttribute('tabindex', active ? '0' : '-1')
+        })
+        panels.forEach((panel) => {
+          panel.toggleAttribute('hidden', panel.getAttribute('data-range-panel') !== range)
+        })
+      }
+
+      buttons.forEach((button, index) => {
+        button.addEventListener('click', () => selectRange(button))
+        button.addEventListener('keydown', (event) => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+          event.preventDefault()
+          const nextIndex = event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? buttons.length - 1
+              : (index + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length
+          const next = buttons[nextIndex]
+          selectRange(next)
+          next.focus()
+        })
+      })
+    })
+  }
+
+  document.addEventListener('astro:page-load', bindRadarRanges)
+  bindRadarRanges()
+</script>

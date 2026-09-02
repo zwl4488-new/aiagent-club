@@ -1,8 +1,8 @@
 ---
 import Base from '../layouts/Base.astro'
-import SearchBox from './SearchBox.astro'
 import RankTable from './RankTable.astro'
 import { modelPricing, seriesByKind } from '../lib/data.mjs'
+import { price } from '../lib/format.mjs'
 import { t } from '../lib/i18n.mjs'
 
 // props: locale
@@ -27,8 +27,8 @@ const priceSpark = await seriesByKind('openrouter', 'price_prompt_mtok')
 const rows = priced.map((r) => ({ ...r, spark: downsample(priceSpark.get(r.entity_id) ?? []) }))
 
 const columns = [
-  { key: 'price_prompt_mtok', label: s.pricing.inCol, primary: true },
-  { key: 'price_completion_mtok', label: s.pricing.outCol },
+  { key: 'price_prompt_mtok', label: s.pricing.inCol, primary: true, format: price },
+  { key: 'price_completion_mtok', label: s.pricing.outCol, format: price },
   { key: 'context_length', label: s.pricing.ctxCol },
   { key: 'or_tokens_day', label: s.tokens },
 ]
@@ -38,14 +38,6 @@ const title = `${s.pricing.title} | aiagent.club`
 <Base locale={locale} title={title} description={s.pricing.intro} path={path} altEn={locale === 'zh' ? otherPath : path} altZh={locale === 'zh' ? path : otherPath}>
   <h1 class="page-title">{s.pricing.title}</h1>
 
-  <nav class="topnav">
-    <a href={`${base}/`}>{s.nav.rankings}</a>
-    <a href={`${base}/changes`}>{s.nav.changelog}</a>
-    <a href={`${base}/pricing`} aria-current="page">{s.nav.pricing}</a>
-    <a href={`${base}/browse`}>{s.nav.browse}</a>
-    <a href={`${base}/methodology`}>{s.nav.methodology}</a>
-    <a href={`${base}/search`}>{s.nav.search}</a>
-  </nav>
 
   <p class="intro">{s.pricing.intro}</p>
 

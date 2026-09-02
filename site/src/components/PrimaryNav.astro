@@ -1,0 +1,19 @@
+---
+// 全站唯一的主导航定义。中英文页面共用，避免新增产品入口时只改到一种语言。
+const { s, base = '', current = '' } = Astro.props
+const items = [
+  { key: 'rankings', href: '/' },
+  { key: 'compare', href: '/compare' },
+  { key: 'watchlist', href: '/watchlist' },
+  { key: 'changelog', href: '/changes' },
+  { key: 'pricing', href: '/pricing' },
+  { key: 'browse', href: '/browse' },
+  { key: 'methodology', href: '/methodology' },
+  { key: 'search', href: '/search' },
+]
+---
+<nav class="topnav" aria-label={s.nav.label}>
+  {items.map((item) => (
+    <a href={`${base}${item.href}`} aria-current={current === item.key ? 'page' : undefined}>{s.nav[item.key]}</a>
+  ))}
+</nav>
