@@ -3,6 +3,7 @@
 import { latestSnapshot } from '../lib/data.mjs'
 import { buildEntityPages } from '../lib/detail.mjs'
 import { buildProjectPages } from '../lib/projects.mjs'
+import { CATEGORY_DEFS } from '../lib/categories.mjs'
 
 const SITE = 'https://www.aiagent.club'
 
@@ -57,6 +58,12 @@ export async function GET() {
     '/zh/',
     '/projects/',
     '/zh/projects/',
+    '/categories/',
+    '/zh/categories/',
+    '/weekly/',
+    '/zh/weekly/',
+    '/data/',
+    '/zh/data/',
     '/changes/',
     '/zh/changes/',
     '/compare/',
@@ -71,6 +78,11 @@ export async function GET() {
     '/zh/browse/',
   ]) {
     entries.push(urlEntry(path, siteDay))
+  }
+
+  for (const category of CATEGORY_DEFS) {
+    entries.push(urlEntry(`/category/${category.slug}/`, siteDay))
+    entries.push(urlEntry(`/zh/category/${category.slug}/`, siteDay))
   }
 
   for (const p of projects) {

@@ -2,6 +2,7 @@
 import Sparkline from './Sparkline.astro'
 import { compact, full } from '../lib/format.mjs'
 import { SHOW_METRICS } from '../lib/detail.mjs'
+import { categorizeProject } from '../lib/categories.mjs'
 
 // props: project(buildProjectPages 的一条), s, base('' | '/zh'), poster(竖版海报 URL,仅 top-100 有)
 const { project: p, s, base = '', poster = null } = Astro.props
@@ -16,6 +17,7 @@ const parts = [
 ]
 const coverageCount = parts.filter((pt) => pt.on).length
 const confidence = coverageCount === 3 ? s.project.confidenceHigh : coverageCount === 2 ? s.project.confidenceMedium : s.project.confidenceLow
+const categories = categorizeProject(p)
 ---
 <article class="detail proj">
   <nav class="crumb"><a href={`${base}/projects`}>{s.project.backIndex}</a></nav>
@@ -23,6 +25,9 @@ const confidence = coverageCount === 3 ? s.project.confidenceHigh : coverageCoun
   <header class="detail-head">
     <div class="proj-badges">{p.kinds.filter((k) => KIND[k]).map((k) => <span class="idx-badge">{KIND[k]}</span>)}</div>
     <h1>{p.name}</h1>
+    <div class="project-categories">
+      {categories.map((slug) => <a href={`${base}/category/${slug}`}>{s.categories.names[slug]}</a>)}
+    </div>
     <p class="rank-line">
       {s.project.inIndex(p.rank, p.total)}
       {poster && <a class="poster-dl" href={poster} download>{s.project.poster}</a>}

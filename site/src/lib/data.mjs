@@ -147,6 +147,13 @@ async function hasColumn(table, column) {
   return cols.some((c) => c.name === column)
 }
 
+/** 某表是否存在（兼容本地旧数据库）。 */
+async function hasTable(table) {
+  const safe = table.replace(/'/g, "''")
+  const [row] = await query(`SELECT count(*) n FROM sqlite_master WHERE type = 'table' AND name = '${safe}'`)
+  return (row?.n ?? 0) > 0
+}
+
 /** 全部实体(用于逐项目 SEO 详情页 getStaticPaths)。 */
 export async function allEntities() {
   const desc = (await hasColumn('entities', 'description')) ? 'description' : `NULL AS description`
@@ -175,6 +182,36 @@ export async function latestMetricsAll() {
     map.get(r.entity_id)[r.metric] = { value: r.value, captured_at: r.captured_at }
   }
   return map
+}
+
+/**
+ * 公开数据健康页所需的可验证汇总：每类实体/观测量/最新日期，以及每个采集器最近一次运行。
+ * 仅返回聚合信息，不暴露私有逐日历史。
+ */
+export async function dataHealth() {
+  const sources = await query(`
+    SELECT e.kind,
+           count(DISTINCT e.entity_id) AS entities,
+           count(m.metric) AS observations,
+           max(m.captured_at) AS latest
+    FROM entities e
+    LEFT JOIN metrics m ON m.entity_id = e.entity_id
+    GROUP BY e.kind
+    ORDER BY e.kind
+  `)
+  let runs = []
+  if (await hasTable('fetch_runs')) {
+    runs = await query(`
+      SELECT source, environment, status, rows_written, error, started_at, finished_at
+      FROM (
+        SELECT *, row_number() OVER (PARTITION BY source ORDER BY coalesce(finished_at, started_at) DESC) AS rn
+        FROM fetch_runs
+      )
+      WHERE rn = 1
+      ORDER BY source
+    `)
+  }
+  return { sources, runs }
 }
 
 /**

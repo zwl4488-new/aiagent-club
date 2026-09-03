@@ -1,0 +1,61 @@
+---
+import Base from '../layouts/Base.astro'
+import { buildEvents } from '../lib/events.mjs'
+import { buildProjects } from '../lib/projects.mjs'
+import { latestSnapshot, movers } from '../lib/data.mjs'
+import { eventSentence } from '../lib/feed.mjs'
+import { compact } from '../lib/format.mjs'
+import { t } from '../lib/i18n.mjs'
+
+const { locale = 'en' } = Astro.props
+const s = t(locale)
+const base = locale === 'zh' ? '/zh' : ''
+const path = `${base}/weekly`
+const otherPath = locale === 'zh' ? '/weekly' : '/zh/weekly'
+const [snapshot, events, growth, projects] = await Promise.all([
+  latestSnapshot(), buildEvents({ windowDays: 7, limit: 12 }), movers('github', 'stars', 7), buildProjects(),
+])
+const topGrowth = growth.filter((row) => row.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, 8)
+const title = `${s.weekly.title} — ${snapshot || ''} | aiagent.club`
+const canonical = `https://www.aiagent.club${path}/`
+const mailto = `mailto:?subject=${encodeURIComponent(`${s.weekly.title} · ${snapshot || ''}`)}&body=${encodeURIComponent(`${s.weekly.intro}\n\n${canonical}`)}`
+---
+<Base locale={locale} title={title} description={s.weekly.intro} path={path} altEn={locale === 'zh' ? otherPath : path} altZh={locale === 'zh' ? path : otherPath}>
+  <header class="weekly-head">
+    <p class="section-kicker">DATA-GENERATED BRIEFING</p>
+    <h1 class="page-title">{s.weekly.title}</h1>
+    <p class="intro">{s.weekly.intro}</p>
+    <p class="weekly-date">{s.weekly.asOf} <time datetime={snapshot}>{snapshot}</time></p>
+    <div class="weekly-actions"><a href={`${base}/feed.xml`}>{s.weekly.rss}</a><a href={mailto}>{s.weekly.email}</a></div>
+    <p class="delivery-note">{s.weekly.deliveryNote}</p>
+  </header>
+
+  <div class="weekly-grid">
+    <section class="weekly-panel">
+      <h2>{s.weekly.momentum}</h2>
+      <ol class="weekly-ranking">
+        {topGrowth.map((row, index) => (
+          <li><span>{index + 1}</span><a href={`${base}/p/${row.entity_id.replace(':', '/')}`}>{row.name}</a><b>+{compact(row.delta)} ★</b></li>
+        ))}
+      </ol>
+    </section>
+    <section class="weekly-panel">
+      <h2>{s.weekly.leaders}</h2>
+      <ol class="weekly-ranking">
+        {projects.slice(0, 8).map((project, index) => (
+          <li><span>{index + 1}</span><a href={`${base}/project/${project.slug}`}>{project.name}</a><b>{project.score}</b></li>
+        ))}
+      </ol>
+    </section>
+  </div>
+
+  <section class="weekly-events">
+    <h2>{s.weekly.events}</h2>
+    {events.length === 0 ? <p class="early">{s.weekly.empty}</p> : (
+      <ul>{events.map((event) => (
+        <li><time datetime={event.at}>{event.at}</time><span class={`cl-badge cl-${event.type}`}>{s.events.typeLabel[event.type]}</span><a href={`${base}/p/${event.slug}`}>{event.name}</a><span>{eventSentence(event, s)}</span></li>
+      ))}</ul>
+    )}
+  </section>
+  <footer class="site">{s.footer}</footer>
+</Base>

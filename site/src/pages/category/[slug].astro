@@ -1,0 +1,10 @@
+---
+import CategoryDetail from '../../components/CategoryDetail.astro'
+import { CATEGORY_DEFS } from '../../lib/categories.mjs'
+
+export function getStaticPaths() {
+  return CATEGORY_DEFS.map(({ slug }) => ({ params: { slug }, props: { slug } }))
+}
+const { slug } = Astro.props
+---
+<CategoryDetail locale="en" slug={slug} />

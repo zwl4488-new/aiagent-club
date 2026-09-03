@@ -1,0 +1,71 @@
+---
+import Base from '../layouts/Base.astro'
+import { dataHealth, overview } from '../lib/data.mjs'
+import { compact } from '../lib/format.mjs'
+import { t } from '../lib/i18n.mjs'
+
+const { locale = 'en' } = Astro.props
+const s = t(locale)
+const base = locale === 'zh' ? '/zh' : ''
+const path = `${base}/data`
+const otherPath = locale === 'zh' ? '/data' : '/zh/data'
+const [ov, health] = await Promise.all([overview(), dataHealth()])
+const runBySource = new Map(health.runs.map((run) => [run.source, run]))
+const sourceByKind = new Map(health.sources.map((source) => [source.kind, source]))
+const CATALOG = [
+  { kind: 'github', label: 'GitHub', url: 'https://github.com', en: 'Attention and activity: stars, forks, commits, releases, issues and pull requests.', zh: '关注度与活跃度：Star、Fork、提交、发版、Issue 与 PR。' },
+  { kind: 'npm', label: 'npm', url: 'https://www.npmjs.com', en: 'Observed JavaScript package adoption through rolling weekly downloads.', zh: '通过滚动周下载量观察 JavaScript 软件包采用度。' },
+  { kind: 'pypi', label: 'PyPI', url: 'https://pypi.org', en: 'Observed Python package adoption through rolling monthly downloads.', zh: '通过滚动月下载量观察 Python 软件包采用度。' },
+  { kind: 'openrouter', label: 'OpenRouter', url: 'https://openrouter.ai', en: 'Platform-level model throughput and model pricing; not total market usage.', zh: '平台口径的模型吞吐与定价，不等于全市场用量。' },
+  { kind: 'huggingface', label: 'Hugging Face', url: 'https://huggingface.co', en: 'Rolling 30-day downloads and likes for open models.', zh: '开源模型近 30 天下载量与 Like。' },
+  { kind: 'modelscope', label: 'ModelScope', url: 'https://modelscope.cn', en: 'Distribution signals for models in the Chinese ecosystem.', zh: '中国模型生态中的分发与关注信号。' },
+  { kind: 'vscode', label: 'VS Code Marketplace', url: 'https://marketplace.visualstudio.com', en: 'Marketplace installs and ratings for coding-agent extensions.', zh: '编码 Agent 扩展的应用市场安装量与评分。' },
+]
+const sources = CATALOG.map((item) => ({ ...item, stats: sourceByKind.get(item.kind), run: runBySource.get(item.kind) })).filter((item) => item.stats)
+const statusText = locale === 'zh' ? { ok: '正常', partial: '部分成功', error: '失败' } : { ok: 'OK', partial: 'Partial', error: 'Error' }
+const title = `${s.dataProof.title} | aiagent.club`
+---
+<Base locale={locale} title={title} description={s.dataProof.intro} path={path} altEn={locale === 'zh' ? otherPath : path} altZh={locale === 'zh' ? path : otherPath}>
+  <header class="proof-head">
+    <p class="section-kicker">PROVENANCE / FRESHNESS / COVERAGE</p>
+    <h1 class="page-title">{s.dataProof.title}</h1>
+    <p class="intro">{s.dataProof.intro}</p>
+  </header>
+
+  <section class="proof-stats" aria-label={s.dataProof.snapshot}>
+    <div><strong>{ov.latest}</strong><span>{s.dataProof.snapshot}</span></div>
+    <div><strong>{compact(ov.entities)}</strong><span>{s.dataProof.records}</span></div>
+    <div><strong>{compact(ov.metrics)}</strong><span>{s.dataProof.observations}</span></div>
+    <div><strong>{ov.days}</strong><span>{s.dataProof.tracked}</span></div>
+  </section>
+
+  <section class="proof-section">
+    <div class="proof-section-head"><h2>{s.dataProof.sourceHealth}</h2><p>{s.dataProof.sourceHealthIntro}</p></div>
+    <div class="source-proof-grid">
+      {sources.map((source) => (
+        <article class="source-proof-card">
+          <header><h3><a href={source.url} rel="external">{source.label} ↗</a></h3>{source.run && <span class={`run-status status-${source.run.status}`}>{statusText[source.run.status] || source.run.status}</span>}</header>
+          <p>{locale === 'zh' ? source.zh : source.en}</p>
+          <dl>
+            <div><dt>{s.dataProof.recordsUnit}</dt><dd>{Number(source.stats.entities).toLocaleString()}</dd></div>
+            <div><dt>{s.dataProof.pointsUnit}</dt><dd>{Number(source.stats.observations).toLocaleString()}</dd></div>
+            <div><dt>{s.dataProof.latest}</dt><dd><time datetime={source.stats.latest}>{source.stats.latest || '—'}</time></dd></div>
+            <div><dt>{s.dataProof.lastRun}</dt><dd>{source.run ? <><time datetime={source.run.finished_at || source.run.started_at}>{(source.run.finished_at || source.run.started_at || '').slice(0, 16).replace('T', ' ')}</time> · {source.run.environment}</> : s.dataProof.noRun}</dd></div>
+          </dl>
+        </article>
+      ))}
+    </div>
+    <p class="proof-caveat">{s.dataProof.caveat}</p>
+  </section>
+
+  <section class="proof-section">
+    <div class="proof-section-head"><h2>{s.dataProof.pipeline}</h2></div>
+    <ol class="proof-pipeline">{s.dataProof.steps.map((step, i) => <li><span>{i + 1}</span><b>{step}</b></li>)}</ol>
+  </section>
+
+  <section class="proof-section proof-verify">
+    <div><h2>{s.dataProof.verify}</h2><p>{s.dataProof.verifyBody}</p></div>
+    <nav><a href={`${base}/methodology`}>{s.dataProof.methodology}</a><a href={`${base}/browse`}>{s.dataProof.browse}</a><a href="https://github.com/zwl4488-new/aiagent-club">{s.dataProof.code} ↗</a></nav>
+  </section>
+  <footer class="site">{s.footer}</footer>
+</Base>

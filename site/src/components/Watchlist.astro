@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro'
 import { buildProjects } from '../lib/projects.mjs'
+import { latestSnapshot } from '../lib/data.mjs'
 import { t } from '../lib/i18n.mjs'
 
 const { locale = 'en' } = Astro.props
@@ -8,13 +9,20 @@ const s = t(locale)
 const base = locale === 'zh' ? '/zh' : ''
 const path = `${base}/watchlist`
 const otherPath = locale === 'zh' ? '/watchlist' : '/zh/watchlist'
-const projects = (await buildProjects()).map((p) => ({ slug: p.slug, name: p.name, score: p.score, kinds: p.kinds }))
+const [allProjects, snapshot] = await Promise.all([buildProjects(), latestSnapshot()])
+const projects = allProjects.map((p) => ({ slug: p.slug, name: p.name, score: p.score, kinds: p.kinds, stars: p.stars, usage: p.usage }))
 const title = `${s.watchlist.title} | aiagent.club`
 ---
 <Base locale={locale} title={title} description={s.watchlist.intro} path={path} altEn={locale === 'zh' ? otherPath : path} altZh={locale === 'zh' ? path : otherPath} noindex={true}>
   <h1 class="page-title">{s.watchlist.title}</h1>
   <p class="intro">{s.watchlist.intro}</p>
   <p class="local-note">● {s.watchlist.local}</p>
+
+  <section id="watchlist-alerts" class="watchlist-alerts" hidden>
+    <div class="watchlist-alert-head"><div><h2>{s.watchlist.alertsTitle}</h2><p>{s.watchlist.alertsIntro}</p></div><span id="watchlist-alert-count"></span></div>
+    <ul id="watchlist-alert-items"></ul>
+  </section>
+  <p id="watchlist-baseline" class="baseline-note" hidden>{s.watchlist.baseline}</p>
 
   <div id="watchlist-empty" class="empty-state" hidden>
     <p>{s.watchlist.empty}</p>
@@ -24,13 +32,63 @@ const title = `${s.watchlist.title} | aiagent.club`
   <p id="watchlist-actions" class="watchlist-actions" hidden><a id="watchlist-compare" href={`${base}/compare`}>{s.watchlist.compare} →</a></p>
   <footer class="site">{s.footer}</footer>
 
-  <script is:inline define:vars={{ projects, base, tx: s.watchlist }}>
+  <script is:inline define:vars={{ projects, snapshot, base, tx: s.watchlist }}>
     ;(function () {
       const KEY = 'aiagent.club.watchlist.v1'
+      const SNAPSHOT_KEY = 'aiagent.club.watchlist.snapshot.v1'
       const state = (window.__aiacWatchlist = window.__aiacWatchlist || { bound: false })
       const bySlug = new Map(projects.map((p) => [p.slug, p]))
       function read() { try { return JSON.parse(localStorage.getItem(KEY) || '[]') } catch (_) { return [] } }
       function write(items) { localStorage.setItem(KEY, JSON.stringify(items)) }
+      function readSnapshot() { try { return JSON.parse(localStorage.getItem(SNAPSHOT_KEY) || 'null') } catch (_) { return null } }
+      function signed(value) { const rounded = Math.round(value); return `${rounded > 0 ? '+' : ''}${rounded.toLocaleString()}` }
+      function currentOf(p) { return { score: p.score, stars: p.stars, usage: Math.round(p.usage) } }
+
+      function updateAlerts(slugs) {
+        const wrap = document.getElementById('watchlist-alerts')
+        const list = document.getElementById('watchlist-alert-items')
+        const count = document.getElementById('watchlist-alert-count')
+        const baseline = document.getElementById('watchlist-baseline')
+        if (!wrap || !list || !count || !baseline) return
+        const previous = readSnapshot()
+        const currentProjects = Object.fromEntries(slugs.map((slug) => [slug, currentOf(bySlug.get(slug))]))
+        let alerts = previous?.alerts || []
+        if (!previous || previous.asOf !== snapshot) {
+          alerts = []
+          if (previous?.projects) {
+            slugs.forEach((slug) => {
+              const before = previous.projects[slug]
+              const now = currentProjects[slug]
+              if (!before || !now) return
+              const changes = []
+              const scoreDelta = now.score - before.score
+              const starsDelta = now.stars - before.stars
+              const usageDelta = now.usage - before.usage
+              if (scoreDelta) changes.push(tx.scoreChanged.replace('{delta}', signed(scoreDelta)))
+              if (starsDelta) changes.push(tx.starsChanged.replace('{delta}', signed(starsDelta)))
+              if (usageDelta) changes.push(tx.usageChanged.replace('{delta}', signed(usageDelta)))
+              if (changes.length) alerts.push({ slug, changes })
+            })
+          }
+          localStorage.setItem(SNAPSHOT_KEY, JSON.stringify({ asOf: snapshot, projects: currentProjects, alerts }))
+        } else {
+          // Keep baselines for projects added during the same snapshot without discarding visible alerts.
+          const merged = { ...(previous.projects || {}), ...currentProjects }
+          localStorage.setItem(SNAPSHOT_KEY, JSON.stringify({ ...previous, projects: merged }))
+        }
+        list.textContent = ''
+        alerts.filter((alert) => slugs.includes(alert.slug) && bySlug.has(alert.slug)).forEach((alert) => {
+          const p = bySlug.get(alert.slug)
+          const li = document.createElement('li')
+          const link = document.createElement('a'); link.href = base + '/project/' + p.slug; link.textContent = p.name
+          const detail = document.createElement('span'); detail.textContent = alert.changes.join(' · ')
+          li.append(link, detail); list.appendChild(li)
+        })
+        const visible = list.children.length
+        wrap.hidden = visible === 0
+        count.textContent = String(visible)
+        baseline.hidden = Boolean(previous) || visible > 0 || slugs.length === 0
+      }
 
       function initWatchlist() {
         const list = document.getElementById('watchlist-items')
@@ -56,6 +114,7 @@ const title = `${s.watchlist.title} | aiagent.club`
             const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = tx.remove; remove.dataset.slug = slug
             li.append(main, remove); list.appendChild(li)
           })
+          updateAlerts(slugs)
         }
         list.addEventListener('click', (event) => {
           const button = event.target.closest('button[data-slug]')

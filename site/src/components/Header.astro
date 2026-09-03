@@ -4,23 +4,12 @@ import PrimaryNav from './PrimaryNav.astro'
 // 全站统一顶部栏:左网站名,右搜索框 + 深浅切换 + 语言切换。
 const { locale = 'en', base = '', otherPath = '/', path = '/', radar = false, s } = Astro.props
 const localPath = locale === 'zh' ? path.replace(/^\/zh(?=\/|$)/, '') || '/' : path
-const current = localPath === '/'
-  ? 'rankings'
-  : localPath.startsWith('/compare')
-    ? 'compare'
-    : localPath.startsWith('/watchlist')
-      ? 'watchlist'
-      : localPath.startsWith('/changes')
-        ? 'changelog'
-        : localPath.startsWith('/pricing')
-          ? 'pricing'
-          : localPath.startsWith('/browse')
-            ? 'browse'
-            : localPath.startsWith('/methodology')
-              ? 'methodology'
-              : localPath.startsWith('/search')
-                ? 'search'
-                : ''
+const routeKeys = [
+  ['categories', ['/categories', '/category/']], ['compare', ['/compare']], ['watchlist', ['/watchlist']],
+  ['weekly', ['/weekly']], ['changelog', ['/changes']], ['pricing', ['/pricing']], ['browse', ['/browse']],
+  ['data', ['/data']], ['methodology', ['/methodology']], ['search', ['/search']],
+]
+const current = localPath === '/' ? 'rankings' : routeKeys.find(([, prefixes]) => prefixes.some((prefix) => localPath.startsWith(prefix)))?.[0] || ''
 ---
 <header class:list={['topbar', { 'topbar-radar': radar }]}>
   <a class="tb-brand" href={`${base}/`}>aiagent<span class="dot">.</span>club</a>

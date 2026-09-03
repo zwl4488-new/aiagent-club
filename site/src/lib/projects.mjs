@@ -136,6 +136,7 @@ export async function buildProjectPages() {
       score: proj.score,
       rank: i + 1,
       total: projects.length,
+      members: proj.members,
       memberPages,
     }
   })

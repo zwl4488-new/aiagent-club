@@ -53,6 +53,7 @@ const jsonLdText = JSON.stringify({ '@context': 'https://schema.org', '@graph': 
     <link rel="alternate" hreflang="en" href={SITE + altEn} />
     <link rel="alternate" hreflang="zh" href={SITE + altZh} />
     <link rel="alternate" hreflang="x-default" href={SITE + altEn} />
+    <link rel="alternate" type="application/rss+xml" title={locale === 'zh' ? 'AI Agent 数据周报 RSS' : 'AI Agent Weekly RSS'} href={`${SITE}${base}/feed.xml`} />
     <meta name="theme-color" content={themeColor} />
     <!-- 社交分享预览:横版指数/项目卡(构建期生成,每次部署刷新)。 -->
     <meta property="og:type" content="website" />
