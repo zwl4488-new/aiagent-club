@@ -25,13 +25,13 @@ export async function GET() {
 
 ## About
 - Purpose: separate hype from real usage, and surface momentum (what is gaining now), rather than a single static leaderboard.
-- Method: public metrics snapshotted twice daily, append-only history, cross-validated across independent signals, with star-farm detection and canonical de-duplication. See the methodology page.
+- Method: public metrics snapshotted twice daily, append-only history, multiple signals scored independently, and canonical de-duplication for verified repository moves. See the methodology page.
 - Data shown in source language; rankings and trends public, full daily history private; collectors open source.
 
 ## Key pages
 - [Rankings](${SITE}/) — hype-vs-usage, weekly movers, and per-source leaderboards
 - [Changelog](${SITE}/changes) — structured events: milestones crossed, releases shipped, usage surges
-- [Methodology](${SITE}/methodology) — what is measured, how, and how gaming is resisted
+- [Methodology](${SITE}/methodology) — how to interpret the index, verify its evidence, and understand its limits
 - [Browse all projects](${SITE}/browse) — full directory, each with a detail page and trend
 
 ## Top agent frameworks & tools (GitHub, by stars)

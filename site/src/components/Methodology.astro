@@ -2,166 +2,116 @@
 import Base from '../layouts/Base.astro'
 import { t } from '../lib/i18n.mjs'
 
-// props: locale
 const { locale = 'en' } = Astro.props
 const s = t(locale)
 const base = locale === 'zh' ? '/zh' : ''
 const path = locale === 'zh' ? '/zh/methodology' : '/methodology'
 const otherPath = locale === 'zh' ? '/methodology' : '/zh/methodology'
 
-// 方法论正文（结构双语）。段落 = 字符串，列表 = {list:[...]}。
 const C = {
   en: {
-    title: 'Methodology',
-    intro:
-      'aiagent.club is a daily time-series instrument for the AI agent ecosystem. This page explains exactly what it measures, how, and how it resists the metrics games that make most "top AI tools" lists misleading.',
-    sections: [
-      {
-        h: 'The question it answers',
-        body: [
-          'Most rankings show a single number — usually GitHub stars — at a single moment. Stars are attention, and attention is easy to manufacture and easy to hoard. A project can top a leaderboard for a year after people stopped using it.',
-          'The harder question is: what is actually being used, and what is gaining momentum right now? aiagent.club is built to answer that, by tracking many signals over time instead of one number at one instant.',
-        ],
-      },
-      {
-        h: 'Hype vs. real usage',
-        body: [
-          'For every project we hold attention signals (stars, watchers) next to real-usage signals (package downloads, model tokens processed, marketplace installs). When a project ranks far apart on the two, that gap is the story a static leaderboard hides — an "overhyped" star-heavy repo, or an "underrated" workhorse people install far more than they star.',
-          'Downloads and tokens are not un-gameable, but they are much harder and more expensive to fake than a star, and they track how the tool is actually pulled into real projects.',
-        ],
-      },
-      {
-        h: 'Momentum over size',
-        body: [
-          'Cumulative totals reward whoever started first. We compute trailing-window deltas — 7-day star gains, week-over-week download surges, new releases — and surface them in Movers and the Changelog. That is where you see a project break out weeks before it reaches the top of any all-time list.',
-        ],
-      },
-      {
-        h: 'The composite index',
-        body: [
-          'The headline AI Agent Index score fuses three signals into one number. Each is converted to a percentile against every other software project, then blended: real usage (45%), momentum (30%), and attention (25%). Usage carries the most weight because it is the hardest to fake; attention the least because it is the easiest.',
-          'Crucially, the weights are not renormalized when a signal is missing. A repository with only stars — no package, no measurable usage — scores zero on the usage and momentum components rather than having its one strong number inflated to fill the gap. So a project climbs only by showing up across independent signals; being excellent at the single metric you can game is deliberately not enough to reach the top.',
-        ],
-      },
-      {
-        h: 'Sources & metrics',
-        body: [
-          'Signals are collected from public sources, both global and Chinese:',
-          {
-            list: [
-              'GitHub — stars, forks, commits, releases, open issues/PRs (frameworks, MCP servers, agent tooling)',
-              'npm & PyPI — weekly / monthly package downloads (real usage of the libraries)',
-              'OpenRouter — tokens processed per day per model (the hardest-to-fake model-usage signal)',
-              'Hugging Face — last-30-day downloads for open models, the substrate agents run on',
-              'ModelScope — download counts for Chinese models (Qwen / DeepSeek / GLM …)',
-              'VS Code Marketplace — install counts for coding agents',
-            ],
-          },
-          'Project descriptions and metadata come from each source of record (GitHub, npm, PyPI). Data is shown in its source language and never machine-translated — translating a name or license is a bug you can\'t detect later.',
-        ],
-      },
-      {
-        h: 'Resisting the games',
-        body: [
-          'A ranking is only trustworthy if it fights the ways people inflate it:',
-          {
-            list: [
-              'Star-farm detection — repositories accumulating stars implausibly fast (sustained hundreds of new stars per day on already-large repos) are flagged and excluded, so bought-star projects don\'t crowd out real ones.',
-              'Cross-validation — no single gameable metric decides a project\'s standing; attention and usage are shown side by side, so a number that has been inflated stands out instead of winning.',
-              'Canonical de-duplication — when a repository is renamed or moved between orgs, its old and new identities are merged into one canonical entry so a project isn\'t double-counted.',
-            ],
-          },
-        ],
-      },
-      {
-        h: 'Cadence & data model',
-        body: [
-          'Every tracked metric is snapshotted twice a day. History is append-only — we record each day\'s value and never rewrite the past; that accumulating time series is the whole point. Collection is idempotent and self-healing: a rate-limited or failed source is retried on the next run and never corrupts what was already stored. Where a public history existed (e.g. a repo\'s full star history), we backfilled it once so trends start deep rather than from zero.',
-        ],
-      },
-      {
-        h: 'Public vs. private, and caveats',
-        body: [
-          'Rankings, current snapshots, and trend charts are public; the full day-by-day history is kept private. The collectors are open source. A few honest limitations: newly discovered projects start as a single data point and grow a trend one day at a time; download figures are rolling windows, not lifetime totals; and reconstructed star history reflects stars that still exist today, not a past instantaneous peak.',
-        ],
-      },
+    eyebrow: 'A READER’S GUIDE',
+    title: 'How to read the Agent Index',
+    intro: 'Use aiagent.club to find projects worth a closer look—not as a final verdict. The index combines public adoption, momentum, and attention signals so one large, old number cannot tell the whole story.',
+    summary: [
+      { h: 'Best for', p: 'Building a shortlist, spotting breakout projects, and comparing traction on the same observable signals.' },
+      { h: 'Read together', p: 'Look at the score, its three components, source coverage, and recent change—not the rank alone.' },
+      { h: 'Not a verdict', p: 'A high score means stronger relative traction. It does not certify code quality, security, or fit for your use case.' },
     ],
+    signalTitle: 'What goes into the score',
+    signalIntro: 'Every software project is compared on three dimensions. Each percentile is calculated among projects with a positive value for that signal; missing or non-positive values score zero.',
+    signals: [
+      { key: 'adoption', pct: 45, h: 'Observed adoption', p: 'Weekly npm downloads and monthly PyPI downloads, normalized to a monthly scale for comparison.', note: 'Useful as an adoption proxy; it can include CI, mirrors, caches, and automated traffic.' },
+      { key: 'momentum', pct: 30, h: 'Momentum', p: 'The project’s trailing seven-day GitHub star gain, measured from the daily time series.', note: 'Shows what is accelerating now rather than rewarding only projects that started early.' },
+      { key: 'attention', pct: 25, h: 'Attention', p: 'The project’s current GitHub star count, used as a public signal of awareness and interest.', note: 'Stars measure attention, not active users, production deployments, or satisfaction.' },
+    ],
+    formulaTitle: 'How the calculation works',
+    formulaSteps: [
+      'The latest available metric is taken for each unified software project.',
+      'Each dimension becomes a percentile from 0 to 100 among projects that have that signal.',
+      'The percentiles are blended: 45% adoption + 30% momentum + 25% attention.',
+      'A missing dimension scores zero. Its weight is not reassigned to the signals a project already has.',
+    ],
+    relative: 'The score is relative, not a grade or probability. It can move when a project changes, when its peers change, or when a new source is linked.',
+    identityTitle: 'What one “project” represents',
+    identityBody: 'A project page may combine a GitHub repository with its npm or PyPI packages when source metadata identifies them as the same product. Source sections show the records that support the score and link to their metrics and trend. Missing or incorrect repository metadata can leave a project only partly linked.',
+    categoryBody: 'Category labels are inferred from public names and descriptions. A project may appear in several categories, and categories do not affect its score.',
+    useTitle: 'A practical way to use the site',
+    useSteps: [
+      { h: 'Discover', p: 'Start with the overall index or a category to find a manageable set of candidates.' },
+      { h: 'Compare', p: 'Open the project pages and compare adoption, momentum, attention, and source coverage side by side.' },
+      { h: 'Verify', p: 'Follow a source record to inspect its current value and history; check Data status for freshness.' },
+      { h: 'Follow', p: 'Add candidates to your Watchlist or use the weekly feed to catch changes instead of rechecking every day.' },
+    ],
+    independenceEyebrow: 'INDEPENDENT BY DESIGN',
+    independenceTitle: 'What keeps the ranking independent',
+    independenceBody: 'Projects do not need to be claimed or paid for to be ranked. Owners cannot edit their score, and sponsorship or self-reported claims are not inputs to the formula. The score is calculated only from public records already tracked by the site.',
+    freshnessBody: 'Collection is scheduled twice daily, while each metric keeps one value per day; freshness can vary by source. Daily history accumulates over time, although same-day reruns, documented backfills, identity merges, or corrections may update a record. Partial and failed runs are shown on Data status. Repository moves are merged only when the redirect and canonical identity can be confirmed.',
+    limitsTitle: 'Limits you should keep in mind',
+    limits: [
+      'Observed adoption is not the same as active users, revenue, retention, or production usage.',
+      'Download windows and platform definitions differ; figures from different sources should not be treated as identical measurements.',
+      'OpenRouter throughput reflects activity on OpenRouter, not the entire model market.',
+      'Newly discovered projects have shorter histories. Projects without a linked package or repository have lower signal coverage and may score lower.',
+      'Automated categories can be imperfect. Treat them as discovery filters, then check the project itself.',
+    ],
+    verifyTitle: 'Want to inspect the evidence?',
+    verifyBody: 'The data page shows source coverage, freshness, and collector health. Every project page links back to its source records, and the collectors are available in the public repository.',
+    data: 'Open data status',
+    categories: 'Browse categories',
+    code: 'Inspect collectors',
   },
   zh: {
-    title: '方法论',
-    intro:
-      'aiagent.club 是面向 AI agent 生态的每日时序数据仪器。这一页说明它到底测什么、怎么测，以及如何抵御那些让多数"AI 工具榜"失真的指标游戏。',
-    sections: [
-      {
-        h: '它回答的问题',
-        body: [
-          '多数榜单只给一个数字——通常是 GitHub star——且只是某一刻的快照。star 是关注度，而关注度既容易制造、也容易囤积。一个项目可以在没人用之后，还稳居榜首一整年。',
-          '更难、也更有价值的问题是：什么在被真正使用？什么正在此刻起势？aiagent.club 就是为回答这个而建——追踪多个信号随时间的变化，而非某一刻的单一数字。',
-        ],
-      },
-      {
-        h: '热度 vs. 真实使用',
-        body: [
-          '对每个项目，我们把关注度信号（star、watcher）与真实使用信号（包下载量、模型处理的 token、插件安装量）并列。当二者排名相差悬殊，这个落差就是静态榜单藏起来的故事——要么是"被高估"的高 star 仓库，要么是"被低估"、安装量远高于 star 的实力项目。',
-          '下载量和 token 并非不可造假，但比刷一个 star 难得多、贵得多，而且它们反映工具是否被真正拉进了实际项目里。',
-        ],
-      },
-      {
-        h: '动量重于体量',
-        body: [
-          '累计总量只奖励起步早的人。我们计算滑动窗口的增量——7 天 star 增长、周环比下载激增、新发版——并在「本周异动」和「变更日志」里呈现。一个项目在登上任何"历史总榜"之前数周，就是在这里先被看见的。',
-        ],
-      },
-      {
-        h: '综合指数',
-        body: [
-          '首页的 AI Agent 指数把三类信号融成一个数字。每一类都先换算成相对全体软件项目的百分位，再加权融合：真实使用（45%）、动量（30%）、关注度（25%）。使用量权重最高，因为它最难造假；关注度最低，因为它最易制造。',
-          '关键在于：某类信号缺失时，权重不做重新归一。一个只有 star、没有包、无可测使用量的仓库，在使用与动量两项上得零分，而非把它唯一的强项数字放大去填补空缺。于是一个项目只有在多个独立信号上都有表现才会上升；把单一可刷指标做到极致，被刻意设计成不足以登顶。',
-        ],
-      },
-      {
-        h: '数据源与指标',
-        body: [
-          '信号采自公开源，兼顾全球与中国：',
-          {
-            list: [
-              'GitHub——star、fork、提交、发版、开放 issue/PR（框架、MCP 服务、agent 工具链）',
-              'npm 与 PyPI——周/月包下载量（库的真实使用）',
-              'OpenRouter——每个模型每日处理的 token（最难造假的模型用量信号）',
-              'Hugging Face——开源模型近 30 天下载量，agent 运行的底座',
-              'ModelScope——国产模型下载量（Qwen / DeepSeek / GLM …）',
-              'VS Code 应用市场——编码 agent 的安装量',
-            ],
-          },
-          '项目简介与元信息取自各自的权威源（GitHub、npm、PyPI）。数据一律以源语言呈现、绝不机器翻译——翻译名称或许可证，是一种事后无法检测的 bug。',
-        ],
-      },
-      {
-        h: '抵御指标游戏',
-        body: [
-          '一个榜单是否可信，取决于它是否对抗人为注水：',
-          {
-            list: [
-              '刷星识别——对涨星快得不合常理的仓库（已很大的仓库还持续每天新增数百 star）标记并剔除，不让买星项目挤掉真实项目。',
-              '交叉验证——不让任何单一可刷指标决定项目地位；关注度与使用量并列呈现，被注水的数字会显眼，而非胜出。',
-              '规范去重——仓库改名或换 org 时，把新旧身份合并为一条规范记录，项目不被重复计数。',
-            ],
-          },
-        ],
-      },
-      {
-        h: '采集节奏与数据模型',
-        body: [
-          '每个指标每天采两次。历史只增不改——每天记一个值、永不改写过去；这份不断累积的时序，正是护城河所在。采集幂等且自愈：被限速或失败的源会在下一轮重试，绝不污染已存的数据。对于存在公开历史的指标（如一个仓库完整的 star 历史），我们一次性回填，让趋势从深处开始而非从零。',
-        ],
-      },
-      {
-        h: '公开与私有，以及局限',
-        body: [
-          '榜单、当前快照与趋势图公开；完整的逐日历史保持私有。采集器开源。几点诚实的局限：新发现的项目起初只有一个数据点，趋势逐日积累；下载量是滑动窗口而非终身累计；重建的 star 历史反映的是"至今仍存在的 star"，而非当时的瞬时峰值。',
-        ],
-      },
+    eyebrow: '用户阅读指南',
+    title: '如何读懂 Agent 指数',
+    intro: '把 aiagent.club 当作筛选值得进一步了解项目的起点，而不是最终裁决。指数把公开的采用度、增长动量与关注度放在一起，避免一个巨大但陈旧的数字讲完整个故事。',
+    summary: [
+      { h: '适合用来', p: '建立候选清单、发现正在起势的项目，并用统一的可观测信号比较市场牵引力。' },
+      { h: '要一起看', p: '不要只看排名；同时查看综合分、三个分项、来源覆盖和近期变化。' },
+      { h: '不是认证', p: '高分表示相对牵引力更强，不代表代码质量、安全性，也不代表一定适合你的场景。' },
     ],
+    signalTitle: '综合分由什么组成',
+    signalIntro: '每个软件项目都会在三个维度上比较。各维度仅在该信号为正值的项目中计算百分位；缺失或非正值按 0 分计算。',
+    signals: [
+      { key: 'adoption', pct: 45, h: '可观测采用度', p: '使用 npm 周下载量与 PyPI 月下载量，并统一换算到月度口径进行比较。', note: '它是采用度代理，可能包含 CI、镜像、缓存和自动化流量。' },
+      { key: 'momentum', pct: 30, h: '增长动量', p: '根据每日时序计算项目过去 7 天的 GitHub Star 增量。', note: '它关注“现在谁在加速”，不会只奖励起步更早的项目。' },
+      { key: 'attention', pct: 25, h: '关注度', p: '使用项目当前的 GitHub Star 数，作为公开可见的认知与兴趣信号。', note: 'Star 反映关注，不等于活跃用户、生产部署或用户满意度。' },
+    ],
+    formulaTitle: '分数如何计算',
+    formulaSteps: [
+      '读取每个统一软件项目的最新可用指标。',
+      '每个维度都换算成项目在同类数据中的 0–100 百分位。',
+      '按采用度 45% + 动量 30% + 关注度 25% 合成综合分。',
+      '缺失维度按 0 分计算，不会把它的权重转给项目已有的强项。',
+    ],
+    relative: '综合分是相对位置，不是等级或成功概率。项目自身变化、其他项目变化，或新数据源被正确关联，都可能让分数移动。',
+    identityTitle: '一条“项目”记录代表什么',
+    identityBody: '当来源元数据能够确认它们属于同一产品时，一个项目页会把 GitHub 仓库与对应的 npm 或 PyPI 软件包合并展示。来源区块说明分数由哪些记录支撑，并可继续查看底层指标和趋势。仓库元数据缺失或有误时，归并也可能不完整。',
+    categoryBody: '分类标签由公开名称和简介自动推断。同一项目可能进入多个分类；分类只用于发现，不参与计分。',
+    useTitle: '更有效的使用方式',
+    useSteps: [
+      { h: '发现', p: '从综合指数或分类榜开始，把候选范围缩小到可研究的数量。' },
+      { h: '比较', p: '打开项目页，并排比较采用度、动量、关注度与来源覆盖。' },
+      { h: '验证', p: '进入来源记录查看当前值和历史趋势，并在“数据状态”检查新鲜度。' },
+      { h: '跟踪', p: '把候选项目加入关注清单，或订阅周报，不必每天重新翻榜。' },
+    ],
+    independenceEyebrow: '独立排名机制',
+    independenceTitle: '排名为什么不依赖项目方',
+    independenceBody: '项目无需认领或付费即可参与排名。项目方不能修改得分，赞助和自报数据也不会进入公式；得分只根据站内已经追踪的公开记录计算。',
+    freshnessBody: '采集任务计划每天运行两次，每项指标按日保留一个值，不同来源的新鲜度可能不同。历史按日积累，但同日重跑、注明的回填、身份合并或数据修正可能更新记录。部分成功与失败运行会在“数据状态”如实显示；仓库迁移只有在重定向和规范身份均能确认时才会合并。',
+    limitsTitle: '使用时需要记住的边界',
+    limits: [
+      '可观测采用度不等于活跃用户、收入、留存或真实生产使用量。',
+      '不同平台的下载窗口与统计定义不同，不应把跨平台数字当成完全相同的测量。',
+      'OpenRouter 吞吐量只反映 OpenRouter 平台，不代表整个模型市场。',
+      '新收录项目的历史更短；没有正确关联软件包或仓库的项目，信号覆盖更少，也可能因此分数偏低。',
+      '自动分类可能出错。请把分类当作发现入口，再进入项目页核实。',
+    ],
+    verifyTitle: '想自己检查证据？',
+    verifyBody: '“数据状态”会展示来源覆盖、新鲜度和采集健康；每个项目页都能继续打开来源记录，采集器代码也在公开仓库中。',
+    data: '查看数据状态',
+    categories: '浏览分类榜',
+    code: '查看采集器',
   },
 }
 
@@ -169,21 +119,67 @@ const c = C[locale] ?? C.en
 const title = `${c.title} | aiagent.club`
 ---
 <Base locale={locale} title={title} description={c.intro} path={path} altEn={locale === 'zh' ? otherPath : path} altZh={locale === 'zh' ? path : otherPath}>
-  <h1 class="page-title">{c.title}</h1>
+  <article class="method-page">
+    <header class="method-hero">
+      <p class="section-kicker">{c.eyebrow}</p>
+      <h1>{c.title}</h1>
+      <p>{c.intro}</p>
+    </header>
 
+    <section class="method-summary" aria-label={c.title}>
+      {c.summary.map((item) => <div><h2>{item.h}</h2><p>{item.p}</p></div>)}
+    </section>
 
-  <article class="prose">
-    <p class="lead">{c.intro}</p>
-    {c.sections.map((sec) => (
-      <section>
-        <h2>{sec.h}</h2>
-        {sec.body.map((b) =>
-          typeof b === 'string' ? <p>{b}</p> : <ul>{b.list.map((li) => <li>{li}</li>)}</ul>
-        )}
+    <section class="method-score">
+      <div class="method-section-head"><h2>{c.signalTitle}</h2><p>{c.signalIntro}</p></div>
+      <div class="method-score-grid">
+        <div class="method-signals">
+          {c.signals.map((signal) => (
+            <article class={`method-signal signal-${signal.key}`}>
+              <div class="method-signal-top"><span>{signal.pct}%</span><h3>{signal.h}</h3></div>
+              <div class="method-weight"><i style={`width:${signal.pct}%`}></i></div>
+              <p>{signal.p}</p><small>{signal.note}</small>
+            </article>
+          ))}
+        </div>
+        <aside class="method-formula">
+          <h3>{c.formulaTitle}</h3>
+          <ol>{c.formulaSteps.map((step) => <li>{step}</li>)}</ol>
+          <p>{c.relative}</p>
+        </aside>
+      </div>
+    </section>
+
+    <div class="method-two-col">
+      <section class="method-panel">
+        <h2>{c.identityTitle}</h2>
+        <p>{c.identityBody}</p>
+        <p>{c.categoryBody}</p>
       </section>
-    ))}
-  </article>
+      <section class="method-panel method-use">
+        <h2>{c.useTitle}</h2>
+        <ol>{c.useSteps.map((step, index) => <li><span>{index + 1}</span><div><h3>{step.h}</h3><p>{step.p}</p></div></li>)}</ol>
+      </section>
+    </div>
 
-  <p class="browse-cta"><a href={`${base}/`}>{s.detail.backHome}</a></p>
+    <section class="method-independence">
+      <div><p class="section-kicker">{c.independenceEyebrow}</p><h2>{c.independenceTitle}</h2></div>
+      <div><p>{c.independenceBody}</p><p>{c.freshnessBody}</p></div>
+    </section>
+
+    <section class="method-limits">
+      <h2>{c.limitsTitle}</h2>
+      <ul>{c.limits.map((item) => <li>{item}</li>)}</ul>
+    </section>
+
+    <section class="method-verify">
+      <div><h2>{c.verifyTitle}</h2><p>{c.verifyBody}</p></div>
+      <nav aria-label={c.verifyTitle}>
+        <a href={`${base}/data`}>{c.data}</a>
+        <a href={`${base}/categories`}>{c.categories}</a>
+        <a href="https://github.com/zwl4488-new/aiagent-club">{c.code} ↗</a>
+      </nav>
+    </section>
+  </article>
   <footer class="site">{s.footer}</footer>
 </Base>
