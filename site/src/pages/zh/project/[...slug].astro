@@ -13,9 +13,15 @@ export async function getStaticPaths() {
 const { project } = Astro.props
 const s = t('zh')
 const path = `/zh/project/${project.slug}`
-const title = `${project.name} — AI Agent 指数 | aiagent.club`
-const description = project.intro ? `${project.name}:${project.intro.slice(0, 140)}` : `${project.name} —— AI Agent 指数综合分 ${project.score}。合并 GitHub 与软件包的多源信号，aiagent.club 每日追踪。`
+const title = project.eligible
+  ? `${project.name} — AI Agent 指数 | aiagent.club`
+  : `${project.name} — 观察池 | aiagent.club`
+const description = project.intro
+  ? `${project.name}:${project.intro.slice(0, 140)}`
+  : project.eligible
+    ? `${project.name} —— AI Agent 指数综合分 ${project.score}。合并 GitHub 与软件包的多源信号，aiagent.club 每日追踪。`
+    : `${project.name} —— 收录于 aiagent.club 观察池，当前有 ${project.coverage}/3 个有效评分信号。`
 ---
 <Base locale="zh" title={title} description={description} path={path} altEn={`/project/${project.slug}`} altZh={path} ogImage={`/og/p/h-zh/${project.slug}.png`}>
-  <ProjectDetail project={project} s={s} base="/zh" poster={project.rank <= 100 ? `/og/p/v-zh/${project.slug}.png` : null} />
+  <ProjectDetail project={project} s={s} base="/zh" poster={project.eligible && project.rank <= 100 ? `/og/p/v-zh/${project.slug}.png` : null} />
 </Base>

@@ -45,6 +45,27 @@ export async function latestSnapshot() {
   return f?.d ?? null
 }
 
+/**
+ * 指数评分参考日：取三个评分维度的最新观测日。
+ * 不只依赖 npm 快照；任一评分源继续更新时，其他源的旧值会按 SLA 自然过期。
+ */
+export async function latestIndexSnapshot() {
+  const [metricRow] = await query(`
+    SELECT max(captured_at) d FROM metrics
+    WHERE metric IN ('stars','downloads_week','downloads_month')
+  `)
+  if (!metricRow?.d || !(await hasTable('fetch_runs'))) return metricRow?.d ?? null
+
+  // 回填也会写 stars，不能让一条新回填把整站的评分快照推进、进而误判其他来源全部过期。
+  // 日常采集才写 fetch_runs；取“评分指标最新日”和“成功/部分成功的评分采集最新日”中较早者。
+  const [runRow] = await query(`
+    SELECT max(substr(coalesce(finished_at, started_at), 1, 10)) d
+    FROM fetch_runs
+    WHERE source IN ('github','npm','pypi') AND status IN ('ok','partial')
+  `)
+  return runRow?.d ? [metricRow.d, runRow.d].sort()[0] : metricRow.d
+}
+
 /** 数据整体概况(用于首页头部)。 */
 export async function overview() {
   const [ent] = await query(`SELECT count(*) n FROM entities`)
@@ -159,7 +180,8 @@ export async function allEntities() {
   const desc = (await hasColumn('entities', 'description')) ? 'description' : `NULL AS description`
   const intro = (await hasColumn('entities', 'intro')) ? 'intro' : `NULL AS intro`
   const pkey = (await hasColumn('entities', 'project_key')) ? 'project_key' : `NULL AS project_key`
-  return query(`SELECT entity_id, kind, name, url, category, ${desc}, ${intro}, ${pkey}, first_seen FROM entities ORDER BY kind, name`)
+  const active = (await hasColumn('entities', 'active')) ? 'WHERE coalesce(active, 1) != 0' : ''
+  return query(`SELECT entity_id, kind, name, url, category, ${desc}, ${intro}, ${pkey}, first_seen FROM entities ${active} ORDER BY kind, name`)
 }
 
 /**
@@ -275,10 +297,24 @@ export async function movers(kind, metric, windowDays) {
       if (s[i].captured_at <= cutoff) { prev = s[i]; break }
     }
     if (!prev || prev.captured_at === last.captured_at) continue
+    // “7 日动量”只接受 7–10 日的基准间隔；不把中间断采数月的增量冒充短窗口增长。
+    const baselineDays = Math.round((new Date(`${last.captured_at}T00:00:00Z`) - new Date(`${prev.captured_at}T00:00:00Z`)) / 86_400_000)
+    if (baselineDays > windowDays + 3) continue
     const delta = last.value - prev.value
     const pct = prev.value ? delta / prev.value : null
     const m = meta.get(id) || {}
-    out.push({ entity_id: id, name: m.name || id, url: m.url, latest: last.value, prev: prev.value, delta, pct, spark: s })
+    out.push({
+      entity_id: id,
+      name: m.name || id,
+      url: m.url,
+      latest: last.value,
+      prev: prev.value,
+      delta,
+      pct,
+      observed_at: last.captured_at,
+      baseline_at: prev.captured_at,
+      spark: s,
+    })
   }
   return out
 }

@@ -5,7 +5,7 @@ const { title, note, overhyped = [], underrated = [], overLabel, underLabel, sta
 
 // 项目的 gh 仓即被追踪实体 github:<gh> → 链到其详情页(内链)。
 function row(r) {
-  return { ...r, ghUrl: `${base}/p/github/${r.gh}` }
+  return { ...r, ghUrl: r.projectSlug ? `${base}/project/${r.projectSlug}` : `${base}/p/github/${r.gh}` }
 }
 ---
 <section class="hype card-box">

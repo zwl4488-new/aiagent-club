@@ -1,7 +1,7 @@
 ---
 import Base from '../layouts/Base.astro'
 import { buildEvents } from '../lib/events.mjs'
-import { buildProjects } from '../lib/projects.mjs'
+import { buildEntityProjectMap, buildProjects, splitProjectIndex } from '../lib/projects.mjs'
 import { latestSnapshot, movers } from '../lib/data.mjs'
 import { eventSentence } from '../lib/feed.mjs'
 import { compact } from '../lib/format.mjs'
@@ -12,9 +12,15 @@ const s = t(locale)
 const base = locale === 'zh' ? '/zh' : ''
 const path = `${base}/weekly`
 const otherPath = locale === 'zh' ? '/weekly' : '/zh/weekly'
-const [snapshot, events, growth, projects] = await Promise.all([
+const [snapshot, events, growth, allProjects] = await Promise.all([
   latestSnapshot(), buildEvents({ windowDays: 7, limit: 12 }), movers('github', 'stars', 7), buildProjects(),
 ])
+const { ranked: projects } = splitProjectIndex(allProjects)
+const projectMap = buildEntityProjectMap(allProjects)
+const preferredHref = (entityId, fallbackSlug = entityId.replace(':', '/')) => {
+  const project = projectMap.get(entityId)
+  return project ? `${base}/project/${project.slug}` : `${base}/p/${fallbackSlug}`
+}
 const topGrowth = growth.filter((row) => row.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, 8)
 const title = `${s.weekly.title} — ${snapshot || ''} | aiagent.club`
 const canonical = `https://www.aiagent.club${path}/`
@@ -35,7 +41,7 @@ const mailto = `mailto:?subject=${encodeURIComponent(`${s.weekly.title} · ${sna
       <h2>{s.weekly.momentum}</h2>
       <ol class="weekly-ranking">
         {topGrowth.map((row, index) => (
-          <li><span>{index + 1}</span><a href={`${base}/p/${row.entity_id.replace(':', '/')}`}>{row.name}</a><b>+{compact(row.delta)} ★</b></li>
+          <li><span>{index + 1}</span><a href={preferredHref(row.entity_id)}>{row.name}</a><b>+{compact(row.delta)} ★</b></li>
         ))}
       </ol>
     </section>
@@ -53,7 +59,7 @@ const mailto = `mailto:?subject=${encodeURIComponent(`${s.weekly.title} · ${sna
     <h2>{s.weekly.events}</h2>
     {events.length === 0 ? <p class="early">{s.weekly.empty}</p> : (
       <ul>{events.map((event) => (
-        <li><time datetime={event.at}>{event.at}</time><span class={`cl-badge cl-${event.type}`}>{s.events.typeLabel[event.type]}</span><a href={`${base}/p/${event.slug}`}>{event.name}</a><span>{eventSentence(event, s)}</span></li>
+        <li><time datetime={event.at}>{event.at}</time><span class={`cl-badge cl-${event.type}`}>{s.events.typeLabel[event.type]}</span><a href={preferredHref(event.entity_id, event.slug)}>{event.name}</a><span>{eventSentence(event, s)}</span></li>
       ))}</ul>
     )}
   </section>

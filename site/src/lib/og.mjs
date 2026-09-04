@@ -58,6 +58,8 @@ const STR = {
     attention: 'Attention',
     rankOf: (r, t) => `#${r} / ${t}`,
     onIndex: 'on the AI Agent Index',
+    observed: 'Observation pool',
+    coverage: 'current signals',
   },
   zh: {
     badge: '每日更新',
@@ -70,6 +72,8 @@ const STR = {
     attention: '关注度',
     rankOf: (r, t) => `第 ${r} / ${t}`,
     onIndex: '· AI Agent 指数',
+    observed: '观察池',
+    coverage: '当前信号',
   },
 }
 
@@ -130,6 +134,7 @@ function indexTree(c, s, projects, total) {
 
 // ── 项目 project 卡:单项目战绩 ──
 function projectTree(c, s, p) {
+  const available = (key, fallback) => p.signals?.[key]?.available ?? fallback
   const pct = (label, val, on) =>
     e('div', { display: 'flex', alignItems: 'center', width: '100%', flexShrink: 0, marginBottom: c.autoH ? 26 : 16 },
       e('div', { flexShrink: 0, width: c.autoH ? 220 : 200, fontSize: c.nameFS, fontWeight: 400, color: INK2 }, label),
@@ -143,14 +148,16 @@ function projectTree(c, s, p) {
     brandRow(c, s, c.autoH ? 26 : 16),
     e('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexShrink: 0 },
       e('div', { fontSize: c.titleFS, fontWeight: 700, color: INK, overflow: 'hidden', whiteSpace: 'nowrap', flexShrink: 1, marginRight: 20 }, p.name),
-      e('div', { display: 'flex', flexShrink: 0, fontSize: c.titleFS - 8, fontWeight: 700, color: ORANGE }, s.rankOf(p.rank, p.total))),
+      e('div', { display: 'flex', flexShrink: 0, fontSize: c.titleFS - 8, fontWeight: 700, color: ORANGE }, p.eligible ? s.rankOf(p.rank, p.total) : s.observed)),
     badges,
     e('div', { display: 'flex', alignItems: 'baseline', flexShrink: 0, marginBottom: c.autoH ? 30 : 18 },
-      e('div', { fontSize: c.autoH ? 96 : 84, fontWeight: 700, color: INK }, String(p.score)),
-      e('div', { fontSize: c.subFS, fontWeight: 400, color: INK2, marginLeft: 16 }, s.score)),
+      e('div', { fontSize: c.autoH ? 96 : 84, fontWeight: 700, color: INK }, p.eligible ? String(p.score) : `${p.coverage}/3`),
+      e('div', { fontSize: c.subFS, fontWeight: 400, color: INK2, marginLeft: 16 }, p.eligible ? s.score : s.coverage)),
   ]
   const bars = e('div', { display: 'flex', flexDirection: 'column', flexShrink: 0, ...(c.autoH ? {} : { flexGrow: 1, justifyContent: 'center' }) },
-    pct(s.usage, p.usagePct, p.usage > 0), pct(s.momentum, p.momPct, p.momentum > 0), pct(s.attention, p.attnPct, p.stars > 0))
+    pct(s.usage, p.usagePct, available('adoption', p.usage > 0)),
+    pct(s.momentum, p.momPct, available('momentum', p.momentum > 0)),
+    pct(s.attention, p.attnPct, available('attention', p.stars > 0)))
   const footer = e('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, height: 56, marginTop: c.autoH ? 40 : 0 },
     e('div', { fontSize: c.footFS, fontWeight: 400, color: INK2 }, s.sub), ctaPill(c, 'www.aiagent.club'))
   const H = c.autoH ? 60 * 2 + (c.brandFS + 26) + c.titleH + (c.badgeFS + 4 + 40) + (96 + 30) + 3 * (c.barH < 20 ? 44 : 44) + (40 + 56) : c.h

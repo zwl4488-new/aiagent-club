@@ -3,8 +3,8 @@ import Sparkline from './Sparkline.astro'
 import { compact, full } from '../lib/format.mjs'
 import { SHOW_METRICS } from '../lib/detail.mjs'
 
-// props: entity(buildEntityPages 的一条), locale, s(翻译), base('' | '/zh')
-const { entity, s, base = '' } = Astro.props
+// props: entity(buildEntityPages 的一条), project(所属统一项目摘要), s(翻译), base('' | '/zh')
+const { entity, project = null, s, base = '' } = Astro.props
 const k = entity.kind
 const kindLabel = s.kindLabel[k] ?? k
 const ml = s.metricLabel
@@ -32,6 +32,13 @@ const lastUpdated = entity.primaryMetric ? entity.metrics[entity.primaryMetric]?
       <p class="rank-line">{s.detail.rankLine(entity.rank, entity.kindTotal, primaryLabel, kindLabel)}</p>
     )}
   </header>
+
+  {project && (
+    <aside class="entity-project-link">
+      <div><span>{s.detail.parentProject}</span><strong>{project.name}</strong><small>{s.detail.parentProjectNote}</small></div>
+      <a href={`${base}/project/${project.slug}`}>{s.detail.openProject}</a>
+    </aside>
+  )}
 
   {primaryLabel && (
     <div class="hero-stat">

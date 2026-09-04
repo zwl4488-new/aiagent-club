@@ -63,6 +63,13 @@ jobs:
       - name: Collect
         run: node src/run.mjs
 
+      # 新发现的 npm/PyPI 记录必须在同一轮按官方元数据归并到统一项目。
+      # 失败时保留来源记录，下次继续重试，不阻断已采集数据推库。
+      - name: Link source records to projects
+        if: always()
+        continue-on-error: true
+        run: node src/link.mjs
+
       # HF 模型卡 intro:本机常连不上 huggingface.co,放 CI 补。幂等(已有 intro 跳过),
       # 失败不挡推库——下次再补。其它 kind 的 intro 本地/历史已齐,不必每次全跑。
       - name: Enrich HuggingFace intros

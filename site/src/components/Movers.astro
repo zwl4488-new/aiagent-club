@@ -2,7 +2,7 @@
 import { compact, full } from '../lib/format.mjs'
 // props: title, note, rows [{entity_id,name,url,latest,delta,pct,spark}], strings {gained, now}, base
 const { title, note, rows = [], gained, now, base = '' } = Astro.props
-const detailHref = (entityId) => `${base}/p/${entityId.replace(':', '/')}`
+const detailHref = (row) => row.projectSlug ? `${base}/project/${row.projectSlug}` : `${base}/p/${row.entity_id.replace(':', '/')}`
 ---
 <section class="movers card-box">
   <div class="movers-head">
@@ -14,7 +14,7 @@ const detailHref = (entityId) => `${base}/p/${entityId.replace(':', '/')}`
       <li>
         <span class="mv-rank">{i + 1}</span>
         <div class="mv-body">
-          <a class="mv-name" href={detailHref(r.entity_id)}>{r.name}</a>
+          <a class="mv-name" href={detailHref(r)}>{r.name}</a>
           <div class="mv-stats">
             <span class="up" title={`${gained}: +${full(r.delta)}`}>▲ {compact(r.delta)}{r.pct != null && <span class="pct"> {(r.pct * 100).toFixed(r.pct < 0.1 ? 1 : 0)}%</span>}</span>
             <span class="mv-now" title={full(r.latest)}>{compact(r.latest)} ★</span>

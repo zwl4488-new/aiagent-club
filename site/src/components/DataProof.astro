@@ -1,15 +1,16 @@
 ---
 import Base from '../layouts/Base.astro'
-import { dataHealth, overview } from '../lib/data.mjs'
+import { dataHealth, latestIndexSnapshot, overview } from '../lib/data.mjs'
 import { compact } from '../lib/format.mjs'
 import { t } from '../lib/i18n.mjs'
+import { metricAgeDays, SIGNAL_FRESHNESS_DAYS } from '../lib/projects.mjs'
 
 const { locale = 'en' } = Astro.props
 const s = t(locale)
 const base = locale === 'zh' ? '/zh' : ''
 const path = `${base}/data`
 const otherPath = locale === 'zh' ? '/data' : '/zh/data'
-const [ov, health] = await Promise.all([overview(), dataHealth()])
+const [ov, health, indexSnapshot] = await Promise.all([overview(), dataHealth(), latestIndexSnapshot()])
 const runBySource = new Map(health.runs.map((run) => [run.source, run]))
 const sourceByKind = new Map(health.sources.map((source) => [source.kind, source]))
 const CATALOG = [
@@ -21,7 +22,11 @@ const CATALOG = [
   { kind: 'modelscope', label: 'ModelScope', url: 'https://modelscope.cn', en: 'Distribution signals for models in the Chinese ecosystem.', zh: '中国模型生态中的分发与关注信号。' },
   { kind: 'vscode', label: 'VS Code Marketplace', url: 'https://marketplace.visualstudio.com', en: 'Marketplace installs and ratings for coding-agent extensions.', zh: '编码 Agent 扩展的应用市场安装量与评分。' },
 ]
-const sources = CATALOG.map((item) => ({ ...item, stats: sourceByKind.get(item.kind), run: runBySource.get(item.kind) })).filter((item) => item.stats)
+const sources = CATALOG.map((item) => {
+  const stats = sourceByKind.get(item.kind)
+  const ageDays = stats?.latest ? metricAgeDays(indexSnapshot, stats.latest) : null
+  return { ...item, stats, run: runBySource.get(item.kind), ageDays, fresh: ageDays != null && ageDays <= SIGNAL_FRESHNESS_DAYS }
+}).filter((item) => item.stats)
 const statusText = locale === 'zh' ? { ok: '正常', partial: '部分成功', error: '失败' } : { ok: 'OK', partial: 'Partial', error: 'Error' }
 const title = `${s.dataProof.title} | aiagent.club`
 ---
@@ -50,6 +55,7 @@ const title = `${s.dataProof.title} | aiagent.club`
             <div><dt>{s.dataProof.recordsUnit}</dt><dd>{Number(source.stats.entities).toLocaleString()}</dd></div>
             <div><dt>{s.dataProof.pointsUnit}</dt><dd>{Number(source.stats.observations).toLocaleString()}</dd></div>
             <div><dt>{s.dataProof.latest}</dt><dd><time datetime={source.stats.latest}>{source.stats.latest || '—'}</time></dd></div>
+            <div><dt>{s.dataProof.indexFreshness}</dt><dd class={source.fresh ? 'freshness-current' : 'freshness-stale'}>{source.fresh ? s.dataProof.current : s.dataProof.stale(source.ageDays)}</dd></div>
             <div><dt>{s.dataProof.lastRun}</dt><dd>{source.run ? <><time datetime={source.run.finished_at || source.run.started_at}>{(source.run.finished_at || source.run.started_at || '').slice(0, 16).replace('T', ' ')}</time> · {source.run.environment}</> : s.dataProof.noRun}</dd></div>
           </dl>
         </article>

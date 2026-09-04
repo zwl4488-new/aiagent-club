@@ -10,7 +10,7 @@ const base = locale === 'zh' ? '/zh' : ''
 const path = `${base}/watchlist`
 const otherPath = locale === 'zh' ? '/watchlist' : '/zh/watchlist'
 const [allProjects, snapshot] = await Promise.all([buildProjects(), latestSnapshot()])
-const projects = allProjects.map((p) => ({ slug: p.slug, name: p.name, score: p.score, kinds: p.kinds, stars: p.stars, usage: p.usage }))
+const projects = allProjects.map((p) => ({ slug: p.slug, name: p.name, score: p.eligible ? p.score : null, eligible: p.eligible, coverage: p.coverage, kinds: p.kinds, stars: p.stars, usage: p.usage }))
 const title = `${s.watchlist.title} | aiagent.club`
 ---
 <Base locale={locale} title={title} description={s.watchlist.intro} path={path} altEn={locale === 'zh' ? otherPath : path} altZh={locale === 'zh' ? path : otherPath} noindex={true}>
@@ -61,7 +61,7 @@ const title = `${s.watchlist.title} | aiagent.club`
               const now = currentProjects[slug]
               if (!before || !now) return
               const changes = []
-              const scoreDelta = now.score - before.score
+              const scoreDelta = Number.isFinite(now.score) && Number.isFinite(before.score) ? now.score - before.score : 0
               const starsDelta = now.stars - before.stars
               const usageDelta = now.usage - before.usage
               if (scoreDelta) changes.push(tx.scoreChanged.replace('{delta}', signed(scoreDelta)))
@@ -109,7 +109,7 @@ const title = `${s.watchlist.title} | aiagent.club`
             const li = document.createElement('li')
             const main = document.createElement('a'); main.href = base + '/project/' + p.slug; main.className = 'watch-main'
             const name = document.createElement('b'); name.textContent = p.name
-            const meta = document.createElement('span'); meta.textContent = `${p.score} · ${p.kinds.join(' · ')}`
+            const meta = document.createElement('span'); meta.textContent = `${p.eligible ? p.score : tx.observation} · ${p.coverage}/3 · ${p.kinds.join(' · ')}`
             main.append(name, meta)
             const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = tx.remove; remove.dataset.slug = slug
             li.append(main, remove); list.appendChild(li)

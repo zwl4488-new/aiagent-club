@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro'
-import { buildProjects } from '../lib/projects.mjs'
+import { buildProjects, splitProjectIndex } from '../lib/projects.mjs'
 import { buildCategoryRankings } from '../lib/categories.mjs'
 import { t } from '../lib/i18n.mjs'
 
@@ -9,7 +9,8 @@ const s = t(locale)
 const base = locale === 'zh' ? '/zh' : ''
 const path = `${base}/categories`
 const otherPath = locale === 'zh' ? '/categories' : '/zh/categories'
-const categories = buildCategoryRankings(await buildProjects())
+const { ranked } = splitProjectIndex(await buildProjects())
+const categories = buildCategoryRankings(ranked)
 const title = `${s.categories.title} | aiagent.club`
 ---
 <Base locale={locale} title={title} description={s.categories.intro} path={path} altEn={locale === 'zh' ? otherPath : path} altZh={locale === 'zh' ? path : otherPath}>

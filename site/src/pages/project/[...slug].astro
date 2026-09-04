@@ -14,9 +14,15 @@ const { project } = Astro.props
 const s = t('en')
 const path = `/project/${project.slug}`
 const stat = project.usage > 0 ? `${compact(project.usage)}/mo` : project.stars > 0 ? `${compact(project.stars)} stars` : ''
-const title = `${project.name} — AI Agent Index | aiagent.club`
-const description = project.intro ? `${project.name}: ${project.intro.slice(0, 140)}` : `${project.name} — score ${project.score} in the AI Agent Index. ${stat}. Unified GitHub and package signals, tracked daily by aiagent.club.`
+const title = project.eligible
+  ? `${project.name} — AI Agent Index | aiagent.club`
+  : `${project.name} — Observation pool | aiagent.club`
+const description = project.intro
+  ? `${project.name}: ${project.intro.slice(0, 140)}`
+  : project.eligible
+    ? `${project.name} — score ${project.score} in the AI Agent Index. ${stat}. Unified GitHub and package signals, tracked daily by aiagent.club.`
+    : `${project.name} — tracked in the aiagent.club observation pool with ${project.coverage}/3 current score signals. ${stat}`
 ---
 <Base locale="en" title={title} description={description} path={path} altEn={path} altZh={`/zh/project/${project.slug}`} ogImage={`/og/p/h-en/${project.slug}.png`}>
-  <ProjectDetail project={project} s={s} base="" poster={project.rank <= 100 ? `/og/p/v-en/${project.slug}.png` : null} />
+  <ProjectDetail project={project} s={s} base="" poster={project.eligible && project.rank <= 100 ? `/og/p/v-en/${project.slug}.png` : null} />
 </Base>

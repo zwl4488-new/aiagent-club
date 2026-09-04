@@ -17,3 +17,12 @@ test('RSS renders stable bilingual-safe event items', () => {
   assert.match(xml, /application\/rss\+xml/)
   assert.match(xml, /aiagent\.club:milestone:github:a&amp;b\/repo:2026-09-01/)
 })
+
+test('RSS prefers a unified project URL while keeping the source event GUID', () => {
+  const xml = renderRss({
+    locale: 'en', s: t('en'), generatedAt: '2026-09-02T12:00:00Z',
+    events: [{ type: 'release', entity_id: 'github:a/repo', slug: 'github/a/repo', project_slug: 'github/a/repo', name: 'A', kind: 'github', at: '2026-09-01', count: 1 }],
+  })
+  assert.match(xml, /https:\/\/www\.aiagent\.club\/project\/github\/a\/repo\//)
+  assert.match(xml, /aiagent\.club:release:github:a\/repo:2026-09-01/)
+})

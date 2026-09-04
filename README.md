@@ -17,7 +17,7 @@ Most directories tell you what exists *today*. aiagent.club records the **time d
 ## How it works
 
 - Collectors run twice daily (GitHub Actions), pull **public** metrics into an append-only SQLite time series on private R2.
-- Rankings **cross-validate multiple signals** (star growth + commit cadence + downloads / installs / token usage) so no single gameable metric can dominate.
+- Agent Index v2 ranks only projects with at least two current dimensions across two source types. Its public formula combines package adoption (45%), seven-day GitHub momentum (30%), and GitHub attention (25%); observations more than two days behind the scoring snapshot age out.
 - Published as a **static site** — dual deploy to Cloudflare Pages (global) + 阿里云 CDN (China, ICP-filed). No visitor tracking.
 - A source marked `partial` in the heartbeat means some listed packages were missing or rate-limited that run; rows that did write are kept and retried next time (not a hard failure).
 
@@ -55,4 +55,4 @@ TBD.
 
 大多数目录只告诉你"现在有什么"。aiagent.club 记录的是**时间维度**:哪些 agent 框架 / MCP server / 模型在加速、哪些在悄悄衰亡、各家平台的定价怎么变——这些只有每天持续测量同一批对象才看得出来,同时覆盖**海外**与**国内**两个生态。
 
-榜单的可信度取决于方法,所以方法公开(见[方法论](https://aiagent.club/zh/methodology)):多指标交叉验证,抓取器在本仓库开源。心跳里某源标 `partial` 表示该轮有个别包缺失或限速,已写入的数据会保留、下次再补——不是整源失败。
+榜单的可信度取决于方法,所以方法公开(见[方法论](https://aiagent.club/zh/methodology)):Index v2 只有在项目至少具备两个当前指标维度、并覆盖两类数据源时才给出正式名次；其余项目保留在观察池。心跳里某源标 `partial` 表示该轮有个别包缺失或限速,已写入的数据会保留；漏采值超过 2 天后会退出评分，而不是让旧数据继续影响名次。

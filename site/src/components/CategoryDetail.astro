@@ -1,7 +1,7 @@
 ---
 import Base from '../layouts/Base.astro'
 import Index from './Index.astro'
-import { buildProjects } from '../lib/projects.mjs'
+import { buildProjects, splitProjectIndex } from '../lib/projects.mjs'
 import { buildCategoryRankings, categoryBySlug } from '../lib/categories.mjs'
 import { t } from '../lib/i18n.mjs'
 
@@ -10,7 +10,8 @@ const s = t(locale)
 const base = locale === 'zh' ? '/zh' : ''
 const definition = categoryBySlug(slug)
 if (!definition) throw new Error(`Unknown category: ${slug}`)
-const category = buildCategoryRankings(await buildProjects()).find((row) => row.slug === slug)
+const { ranked } = splitProjectIndex(await buildProjects())
+const category = buildCategoryRankings(ranked).find((row) => row.slug === slug)
 const rows = category?.projects || []
 const path = `${base}/category/${slug}`
 const otherPath = locale === 'zh' ? `/category/${slug}` : `/zh/category/${slug}`

@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro'
-import { buildProjects } from '../lib/projects.mjs'
+import { buildProjects, splitProjectIndex } from '../lib/projects.mjs'
 import { t } from '../lib/i18n.mjs'
 
 const { locale = 'en' } = Astro.props
@@ -8,14 +8,15 @@ const s = t(locale)
 const base = locale === 'zh' ? '/zh' : ''
 const path = `${base}/compare`
 const otherPath = locale === 'zh' ? '/compare' : '/zh/compare'
-const projects = (await buildProjects()).filter((p) => p.score > 0).slice(0, 80).map((p) => ({
+const { ranked } = splitProjectIndex(await buildProjects())
+const projects = ranked.slice(0, 80).map((p) => ({
   slug: p.slug,
   name: p.name,
   score: p.score,
   usage: Math.round(p.usage),
   momentum: p.momentum,
   stars: p.stars,
-  coverage: [p.usage > 0, p.momentum > 0, p.stars > 0].filter(Boolean).length,
+  coverage: p.coverage,
   kinds: p.kinds,
 }))
 const title = `${s.compare.title} | aiagent.club`

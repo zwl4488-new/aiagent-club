@@ -7,7 +7,7 @@ import RadarPulse from './RadarPulse.astro'
 import RadarMovers from './RadarMovers.astro'
 import RadarLeaders from './RadarLeaders.astro'
 import { overview, ranking, movers, latestMap, seriesByKind } from '../lib/data.mjs'
-import { hypeVsUsage, buildProjects } from '../lib/projects.mjs'
+import { buildEntityProjectMap, buildProjects, hypeVsUsage, splitProjectIndex } from '../lib/projects.mjs'
 import { buildEvents } from '../lib/events.mjs'
 import { t } from '../lib/i18n.mjs'
 import { compact, full } from '../lib/format.mjs'
@@ -28,7 +28,9 @@ const base = locale === 'zh' ? '/zh' : ''
 
 const ov = await overview()
 // 旗舰:统一项目综合指数(top 10)。
-const projects = await buildProjects()
+const allProjects = await buildProjects()
+const { ranked: projects } = splitProjectIndex(allProjects)
+const projectMap = buildEntityProjectMap(allProjects)
 // 各源榜(每源 top 10)→ 卡片行,含小折线(spark 走有历史的指标)。长尾在 /browse。
 const detailHref = (entityId) => `${base}/p/${entityId.replace(':', '/')}`
 function srcRows(rows, key, sparkMap) {
@@ -66,12 +68,13 @@ const moverEntries = await Promise.all(moverWindows.map(async (days) => {
   const rows = (await movers('github', 'stars', days)).sort((a, b) => b.delta - a.delta).slice(0, 8)
   return [days, rows]
 }))
-const moversByWindow = Object.fromEntries(moverEntries)
+const moversByWindow = Object.fromEntries(moverEntries.map(([days, rows]) => [days, rows.map((row) => ({ ...row, projectSlug: projectMap.get(row.entity_id)?.slug ?? null }))]))
 const starMovers = moversByWindow[7]
 const [starMap, dlMonthMap, dlWeekMap] = await Promise.all([latestMap('stars'), latestMap('downloads_month'), latestMap('downloads_week')])
 const hype = hypeVsUsage(starMap, dlMonthMap, dlWeekMap)
-const overhyped = [...hype].sort((a, b) => b.gap - a.gap).slice(0, 6)
-const underrated = [...hype].sort((a, b) => a.gap - b.gap).slice(0, 6)
+const withProjectSlug = (row) => ({ ...row, projectSlug: projectMap.get(`github:${row.gh}`)?.slug ?? null })
+const overhyped = [...hype].sort((a, b) => b.gap - a.gap).slice(0, 6).map(withProjectSlug)
+const underrated = [...hype].sort((a, b) => a.gap - b.gap).slice(0, 6).map(withProjectSlug)
 const events7d = await buildEvents({ windowDays: 7 })
 const adoptionLeader = projects.reduce((best, p) => (p.usage > (best?.usage ?? -1) ? p : best), null)
 const momentumLeader = starMovers[0] ?? null
@@ -82,7 +85,7 @@ const sourceCount = [orusage, gh, npm, pypi, vscode, modelscope, hf].filter((row
   <Hero s={s} ov={ov} base={base} />
 
   <section class="snapshot-bar" aria-label={s.snapshot}>
-    <div><strong>{projects.length}</strong><span>{s.unifiedProjects}</span></div>
+    <div><strong>{allProjects.length}</strong><span>{s.unifiedProjects}</span></div>
     <div><strong>{ov.entities}</strong><span>{s.sourceRecords}</span></div>
     <div><strong>{ov.metrics}</strong><span>{s.observations}</span></div>
     <div><strong>{sourceCount}</strong><span>{s.independentSources}</span></div>

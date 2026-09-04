@@ -13,7 +13,6 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { runSqlite, createWriter, query } from './db.mjs'
 import { fetchRetry, sleep } from './fetch/client.mjs'
-import { NPM_PACKAGES, PYPI_PACKAGES } from './entities.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const UA = 'aiagent-club'
@@ -48,13 +47,24 @@ export function pypiRepoKey(info) {
   if (!info) return null
   const urls = info.project_urls || {}
   const prefer = ['repository', 'source', 'source code', 'code', 'github', 'homepage']
+  const priority = (label) => {
+    const index = prefer.indexOf(label.toLowerCase())
+    return index === -1 ? prefer.length : index
+  }
   const entries = Object.entries(urls)
-  entries.sort((a, b) => prefer.indexOf(a[0].toLowerCase()) - prefer.indexOf(b[0].toLowerCase()))
-  for (const [, v] of entries) {
+  const preferred = entries.filter(([label]) => priority(label) < prefer.length).sort((a, b) => priority(a[0]) - priority(b[0]))
+  for (const [, v] of preferred) {
     const k = ghOwnerName(v)
     if (k) return k
   }
-  return ghOwnerName(info.home_page)
+  const home = ghOwnerName(info.home_page)
+  if (home) return home
+  for (const [label, v] of entries) {
+    if (priority(label) < prefer.length) continue
+    const k = ghOwnerName(v)
+    if (k) return k
+  }
+  return null
 }
 
 async function ensureSchema(dbPath) {
@@ -62,13 +72,25 @@ async function ensureSchema(dbPath) {
   await runSqlite(dbPath, schema)
   const cols = /** @type {any[]} */ (await runSqlite(dbPath, `PRAGMA table_info(entities);`, { json: true }))
   if (!cols.some((c) => c.name === 'project_key')) await runSqlite(dbPath, `ALTER TABLE entities ADD COLUMN project_key TEXT;`)
+  if (!cols.some((c) => c.name === 'active')) await runSqlite(dbPath, `ALTER TABLE entities ADD COLUMN active INTEGER DEFAULT 1;`)
 }
 
-async function hasKey(dbPath, entityId, refresh) {
-  if (refresh) return false
-  const safe = entityId.replace(/'/g, "''")
-  const [r] = await query(dbPath, `SELECT project_key FROM entities WHERE entity_id='${safe}'`)
-  return Boolean(r && r.project_key)
+/**
+ * 只处理已经成为来源记录的包；以数据库为准，自动覆盖新发现条目，也避免为尚未采集成功的清单项发请求。
+ */
+export async function packageTargets(dbPath, kind, refresh) {
+  if (kind !== 'npm' && kind !== 'pypi') throw new Error(`unsupported package kind: ${kind}`)
+  const rows = await query(
+    dbPath,
+    `SELECT entity_id, project_key FROM entities
+     WHERE kind='${kind}' AND coalesce(active, 1) != 0
+     ${refresh ? '' : 'AND (project_key IS NULL OR project_key = entity_id)'}
+     ORDER BY entity_id`
+  )
+  const prefix = `${kind}:`
+  return rows
+    .filter((row) => row.entity_id?.startsWith(prefix) && row.entity_id.length > prefix.length)
+    .map((row) => ({ entity_id: row.entity_id, name: row.entity_id.slice(prefix.length) }))
 }
 
 async function main() {
@@ -91,10 +113,10 @@ async function main() {
 
   // ── npm:取 packument.repository → github owner/name;取不到用自身 entity_id ──
   let nHit = 0
+  let nFailed = 0
   let first = true
-  for (const pkg of NPM_PACKAGES) {
-    const eid = `npm:${pkg}`
-    if (await hasKey(dbPath, eid, refresh)) continue
+  const npmTargets = await packageTargets(dbPath, 'npm', refresh)
+  for (const { entity_id: eid, name: pkg } of npmTargets) {
     if (!first) await sleep(NPM_GAP_MS)
     first = false
     try {
@@ -103,19 +125,20 @@ async function main() {
       setKey(eid, key || eid)
       if (key) nHit++
     } catch (e) {
+      nFailed++
       log(`  npm ${pkg}: 失败跳过:${e instanceof Error ? e.message : e}`)
     }
     if (writer.pending >= 50) await writer.flush()
   }
   await writer.flush()
-  log(`npm: ${nHit} 个链到 github 仓`)
+  log(`npm: 检查 ${npmTargets.length} 条，${nHit} 个链到 github 仓，${nFailed} 个待重试`)
 
   // ── pypi:取 info.project_urls → github owner/name ──
   let pHit = 0
+  nFailed = 0
   first = true
-  for (const pkg of PYPI_PACKAGES) {
-    const eid = `pypi:${pkg}`
-    if (await hasKey(dbPath, eid, refresh)) continue
+  const pypiTargets = await packageTargets(dbPath, 'pypi', refresh)
+  for (const { entity_id: eid, name: pkg } of pypiTargets) {
     if (!first) await sleep(PYPI_GAP_MS)
     first = false
     try {
@@ -124,16 +147,19 @@ async function main() {
       setKey(eid, key || eid)
       if (key) pHit++
     } catch (e) {
+      nFailed++
       log(`  pypi ${pkg}: 失败跳过:${e instanceof Error ? e.message : e}`)
     }
     if (writer.pending >= 50) await writer.flush()
   }
   await writer.flush()
-  log(`pypi: ${pHit} 个链到 github 仓`)
+  log(`pypi: 检查 ${pypiTargets.length} 条，${pHit} 个链到 github 仓，${nFailed} 个待重试`)
 
-  // ── 其余实体(hf/openrouter/modelscope/vscode 及未链上的)project_key = 自身 ──
-  await runSqlite(dbPath, `UPDATE entities SET project_key = entity_id WHERE project_key IS NULL;`)
-  log('其余:project_key = 自身 entity_id')
+  // ── 其余实体(hf/openrouter/modelscope/vscode)project_key = 自身 ──
+  // npm/PyPI 的临时请求失败必须保持 NULL；构建时仍会按 entity_id 单独展示，下轮会再次尝试归并。
+  // 已检查但暂时没有仓库链接的包使用自身 key，也会在后续轮次轻量复查，以便元数据补全后自动合并。
+  await runSqlite(dbPath, `UPDATE entities SET project_key = entity_id WHERE project_key IS NULL AND kind NOT IN ('npm','pypi');`)
+  log('非包来源:project_key = 自身 entity_id；包来源临时失败项保留待重试')
   log('link done')
 }
 

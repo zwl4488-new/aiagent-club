@@ -11,12 +11,13 @@ const ml = s.metricLabel
 const detailHref = (slug) => `${base}/p/${slug}`
 // 综合分构成三分项
 const parts = [
-  { label: s.project.usage, pct: p.usagePct, on: p.usage > 0 },
-  { label: s.project.momentum, pct: p.momPct, on: p.momentum > 0 },
-  { label: s.project.attention, pct: p.attnPct, on: p.stars > 0 },
+  { label: s.project.usage, pct: p.usagePct, signal: p.signals.adoption },
+  { label: s.project.momentum, pct: p.momPct, signal: p.signals.momentum },
+  { label: s.project.attention, pct: p.attnPct, signal: p.signals.attention },
 ]
-const coverageCount = parts.filter((pt) => pt.on).length
+const coverageCount = p.coverage
 const confidence = coverageCount === 3 ? s.project.confidenceHigh : coverageCount === 2 ? s.project.confidenceMedium : s.project.confidenceLow
+const statusLabel = (signal) => signal.status === 'fresh' ? s.project.signalFresh : signal.status === 'stale' ? s.project.signalStale : s.project.signalMissing
 const categories = categorizeProject(p)
 ---
 <article class="detail proj">
@@ -29,7 +30,7 @@ const categories = categorizeProject(p)
       {categories.map((slug) => <a href={`${base}/category/${slug}`}>{s.categories.names[slug]}</a>)}
     </div>
     <p class="rank-line">
-      {s.project.inIndex(p.rank, p.total)}
+      {p.eligible ? s.project.inIndex(p.rank, p.total) : s.project.observation}
       {poster && <a class="poster-dl" href={poster} download>{s.project.poster}</a>}
       <button
         class="watch-button"
@@ -41,19 +42,20 @@ const categories = categorizeProject(p)
         aria-pressed="false"
       >{s.project.watch}</button>
     </p>
+    {!p.eligible && <p class="observation-note">{s.project.observationNote}</p>}
   </header>
 
   <div class="proj-score">
     <div class="proj-score-num">
-      <b>{p.score}</b>
-      <span>{s.index.score}</span>
+      <b>{p.eligible ? p.score : '—'}</b>
+      <span>{p.eligible ? s.index.score : s.index.observationStatus}</span>
     </div>
     <div class="proj-breakdown">
       {parts.map((pt) => (
-        <div class={`brk ${pt.on ? '' : 'brk-off'}`}>
-          <span class="brk-label">{pt.label}</span>
-          <div class="brk-bar"><i style={`width:${pt.pct}%`}></i></div>
-          <span class="brk-pct">{pt.on ? pt.pct : '—'}</span>
+        <div class={`brk ${pt.signal.available ? '' : 'brk-off'} ${pt.signal.status === 'stale' ? 'brk-stale' : ''}`}>
+          <span class="brk-label">{pt.label}<small>{statusLabel(pt.signal)}{pt.signal.observedAt ? ` · ${pt.signal.observedAt}` : ''}</small></span>
+          <div class="brk-bar"><i style={`width:${pt.signal.available ? pt.pct : 0}%`}></i></div>
+          <span class="brk-pct">{pt.signal.available ? pt.pct : '—'}</span>
         </div>
       ))}
     </div>
@@ -64,8 +66,9 @@ const categories = categorizeProject(p)
       <b>{s.project.confidence}</b>
       <span>{s.project.confidenceNote}</span>
     </div>
-    <div class="confidence-value"><strong>{confidence}</strong><span>{coverageCount}/3</span></div>
+    <div class="confidence-value"><strong>{confidence}</strong><span>{coverageCount}/3 · {s.project.sourceTypes(p.sourceCoverage)}</span></div>
   </section>
+  <p class="index-meta">{s.project.indexMeta(p.methodologyVersion, p.snapshot || '—')}</p>
 
   {p.intro && (
     <section class="about">

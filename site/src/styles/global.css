@@ -168,6 +168,12 @@ footer.site a { color: var(--accent); }
 .detail-meta a { color: var(--accent); text-decoration: none; }
 .detail-meta a:hover { text-decoration: underline; }
 .rank-line { margin: 0.8rem 0 0; color: var(--fg-soft); font-size: 0.9rem; }
+.entity-project-link { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin: 1.2rem 0; padding: 0.85rem 1rem; border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border)); border-radius: 12px; background: color-mix(in srgb, var(--accent) 5%, var(--bg)); }
+.entity-project-link span, .entity-project-link strong, .entity-project-link small { display: block; }
+.entity-project-link span { color: var(--accent); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.entity-project-link strong { margin-top: 0.08rem; }
+.entity-project-link small { margin-top: 0.18rem; color: var(--fg-soft); font-size: 0.75rem; }
+.entity-project-link a { flex-shrink: 0; color: #fff; background: var(--accent); border-radius: 9px; padding: 0.48rem 0.7rem; font-size: 0.8rem; font-weight: 650; text-decoration: none; }
 .poster-cta { margin: 0.6rem 0 0; font-size: 0.85rem; }
 .poster-cta a, .poster-dl { color: var(--accent); text-decoration: none; }
 .poster-dl { margin-left: 0.9rem; font-size: 0.82rem; font-weight: 600; white-space: nowrap; }
@@ -353,11 +359,16 @@ footer.site a { color: var(--accent); }
 .idx-stats { margin: 0.1rem 0 0; display: flex; flex-wrap: wrap; gap: 0.3rem 0.9rem; font-size: 0.83rem; color: var(--fg-soft); font-variant-numeric: tabular-nums; }
 .idx-stats b { color: var(--fg); font-weight: 600; }
 .idx-stats .up { color: #16a34a; }
+.idx-coverage { color: var(--accent); font-weight: 650; }
 .idx-score { display: flex; align-items: center; gap: 0.5rem; }
 .idx-bar { flex: 1; height: 8px; border-radius: 999px; background: var(--border); overflow: hidden; }
 .idx-bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 45%, #ffffff), var(--accent)); }
 .idx-num { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 1.05rem; min-width: 1.6rem; text-align: right; }
 .index .rank-more { margin: 0.4rem 0 0.8rem; }
+.index-version, .index-meta { margin: 0.5rem 0 0; color: var(--fg-soft); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+.observation-index { background: var(--bg); }
+.observation-index .idx-rank { color: var(--fg-soft) !important; }
+.idx-observation { justify-self: end; color: var(--fg-soft); border: 1px solid var(--border); border-radius: 999px; padding: 0.2rem 0.55rem; font-size: 0.72rem; white-space: nowrap; }
 @media (prefers-color-scheme: dark) { .idx-stats .up { color: #4ade80; } }
 :root[data-theme="dark"] .idx-stats .up { color: #4ade80; }
 
@@ -372,18 +383,21 @@ footer.site a { color: var(--accent); }
 /* ── 逐项目详情页 ── */
 .proj-badges { display: flex; gap: 0.3rem; margin-bottom: 0.3rem; }
 .proj .rank-line { color: var(--accent); font-size: 0.9rem; margin: 0.3rem 0 0; }
+.observation-note { max-width: 65ch; margin: 0.55rem 0 0; color: var(--fg-soft); font-size: 0.84rem; line-height: 1.5; }
 .proj-score { display: flex; align-items: center; gap: 1.5rem; margin: 1.4rem 0; padding: 1rem 1.1rem; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-soft); flex-wrap: wrap; }
 .proj-score-num { text-align: center; flex-shrink: 0; }
 .proj-score-num b { display: block; font-size: 2.4rem; font-weight: 750; line-height: 1; font-variant-numeric: tabular-nums; }
 .proj-score-num span { font-size: 0.75rem; color: var(--fg-soft); text-transform: uppercase; letter-spacing: 0.06em; }
 .proj-breakdown { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 0.5rem; }
-.brk { display: grid; grid-template-columns: 5.5rem 1fr 2.2rem; align-items: center; gap: 0.6rem; font-size: 0.85rem; }
+.brk { display: grid; grid-template-columns: 8.5rem 1fr 2.2rem; align-items: center; gap: 0.6rem; font-size: 0.85rem; }
 .brk-label { color: var(--fg-soft); }
+.brk-label small { display: block; margin-top: 0.08rem; color: var(--fg-soft); font-size: 0.65rem; font-weight: 500; font-variant-numeric: tabular-nums; }
 .brk-bar { height: 7px; border-radius: 999px; background: var(--border); overflow: hidden; }
 .brk-bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 45%, #ffffff), var(--accent)); }
 .brk-pct { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
 .brk-off { opacity: 0.5; }
 .brk-off .brk-bar i { background: var(--fg-soft); }
+.brk-stale .brk-label small { color: var(--warn); }
 .proj-sources { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 1rem; margin-top: 0.6rem; }
 .psrc { border: 1px solid var(--border); border-radius: 10px; padding: 0.8rem 0.9rem; }
 .psrc-head { display: flex; align-items: baseline; gap: 0.5rem; }
@@ -562,6 +576,7 @@ footer.site a { color: var(--accent); }
 .confidence-card > div > span { color: var(--fg-soft); font-size: 0.8rem; }
 .confidence-value { display: flex; align-items: baseline; gap: 0.45rem; color: var(--accent); text-align: right; }
 .confidence-value strong { font-size: 1.05rem; }
+.confidence-card + .index-meta { margin: -1rem 0 1.4rem; }
 .local-note { width: max-content; margin: 0.8rem 0; color: var(--good); font-size: 0.82rem; }
 .watchlist-items { list-style: none; margin: 1rem 0; padding: 0; display: grid; gap: 0.6rem; }
 .watchlist-items li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.8rem 0.9rem; border: 1px solid var(--border); border-radius: 10px; }
@@ -576,6 +591,8 @@ footer.site a { color: var(--accent); }
   .topnav a { padding: 0.3rem 0.55rem; font-size: 0.82rem; }
   .hero-search { max-width: none; }
   .confidence-card { align-items: flex-start; }
+  .brk { grid-template-columns: 7rem 1fr 1.8rem; }
+  .entity-project-link { align-items: flex-start; flex-direction: column; }
 }
 
 /* ══ Radar 首页：沿用原站组件与数据，只升级首页信息架构 ══ */
@@ -669,11 +686,13 @@ html[lang='zh'] .radar-home .hero-title { line-height: 1.14; font-size: clamp(2.
 .radar-leader-score small { display: block; color: var(--radar-green); font-size: 0.6rem; }
 .radar-compare-cta { display: flex; justify-content: space-between; margin-top: 1.2rem; padding: 0.85rem 1rem; color: var(--radar-contrast-text); background: var(--radar-contrast); border-radius: 7px; font-size: 0.75rem; font-weight: 700; text-decoration: none; }
 .radar-compare-cta span { color: var(--radar-acid); }
-.radar-side-column > .hype { --fg: var(--radar-on-acid); --fg-soft: #525e2d; --warn: #8a4a0a; --good: #0f6b4f; margin: 0; }
-.radar-side-column > .hype .hype-head h3, .radar-side-column > .hype .hype-col .name { color: var(--radar-on-acid); }
-.radar-side-column > .hype .hype-head .note, .radar-side-column > .hype .hype-col .nums { color: #525e2d; }
-.radar-side-column > .hype .hype-col { border-color: rgba(23,33,28,.18); background: rgba(255,255,255,.28); }
-.radar-home .radar-side-column > .hype .hype-col h3 { color: var(--radar-on-acid) !important; font-weight: 700; font-size: 1rem; }
+.radar-side-column > .hype { margin: 0; }
+.radar-side-column > .hype .hype-head h3, .radar-side-column > .hype .hype-col .name { color: var(--radar-ink); }
+.radar-side-column > .hype .hype-head .note, .radar-side-column > .hype .hype-col .nums { color: var(--radar-muted); }
+.radar-side-column > .hype .hype-col { border-color: var(--radar-line); }
+.radar-side-column > .hype .hype-col.over { background: color-mix(in srgb, var(--warn) 7%, var(--radar-card)); }
+.radar-side-column > .hype .hype-col.under { background: color-mix(in srgb, var(--good) 7%, var(--radar-card)); }
+.radar-home .radar-side-column > .hype .hype-col h3 { font-weight: 700; font-size: 1rem; }
 .radar-source-section { margin-top: 1rem; padding: clamp(1.5rem, 3vw, 2.4rem); border: 1px solid var(--radar-line); border-radius: 16px; background: var(--radar-surface); }
 .radar-source-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.85rem; }
 .radar-source-grid .rcard { margin: 0; color: var(--radar-ink); background: var(--radar-card); }
@@ -759,6 +778,8 @@ html[lang='zh'] .radar-home .hero-title { line-height: 1.14; font-size: clamp(2.
 .source-proof-card dl div { display: flex; justify-content: space-between; gap: 0.8rem; padding: 0.24rem 0; border-top: 1px solid var(--border); font-size: 0.76rem; }
 .source-proof-card dt { color: var(--fg-soft); }
 .source-proof-card dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.freshness-current { color: var(--good); font-weight: 650; }
+.freshness-stale { color: var(--warn); font-weight: 650; }
 .run-status { flex-shrink: 0; padding: 0.15rem 0.42rem; border-radius: 999px; font-size: 0.68rem; font-weight: 700; }
 .status-ok { color: var(--good); background: color-mix(in srgb, var(--good) 12%, var(--bg)); }
 .status-partial { color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, var(--bg)); }

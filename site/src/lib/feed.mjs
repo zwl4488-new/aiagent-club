@@ -17,7 +17,9 @@ export function renderRss({ events, locale, s, generatedAt }) {
   const feedUrl = `${SITE}${base}/feed.xml`
   const weeklyUrl = `${SITE}${base}/weekly/`
   const items = events.map((event) => {
-    const link = `${SITE}${base}/p/${event.slug}/`
+    const link = event.project_slug
+      ? `${SITE}${base}/project/${event.project_slug}/`
+      : `${SITE}${base}/p/${event.slug}/`
     const sentence = eventSentence(event, s)
     const title = `${event.name} ${sentence}`
     const pubDate = new Date(`${event.at}T12:00:00Z`).toUTCString()

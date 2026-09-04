@@ -23,7 +23,7 @@ const title = `${s.search.title} | aiagent.club`
   <p class="browse-cta"><a href={`${base}/`}>{s.detail.backHome}</a></p>
   <footer class="site">{s.footer}</footer>
 
-  <script is:inline define:vars={{ base, kinds: s.kindLabel, tx: { hint: s.search.hint, empty: s.search.empty, results: s.search.results, showing: s.search.showing } }}>
+  <script is:inline define:vars={{ base, kinds: s.kindLabel, tx: { hint: s.search.hint, empty: s.search.empty, results: s.search.results, showing: s.search.showing, unifiedProject: s.search.unifiedProject } }}>
     // 纯静态站的客户端搜索:拉一次 /search.json,浏览器里过滤排序。
     // 关键:ClientRouter(SPA 导航)下内联脚本只在首次出现时执行一次,切走再切回本页不会重跑,
     // 新换进来的 #q 会丢失监听 → 搜索失效。解法:把绑定放进 astro:page-load(每次导航都触发),
@@ -39,14 +39,15 @@ const title = `${s.search.title} | aiagent.club`
       }
 
       function score(it, q) {
-        const n = it.n.toLowerCase(), d = (it.d || '').toLowerCase()
+        const n = it.n.toLowerCase(), d = (it.d || '').toLowerCase(), aliases = (it.a || '').toLowerCase()
         let sc = 0
         if (n === q) sc = 1000
         else if (n.startsWith(q)) sc = 200
         else if (n.includes(q)) sc = 100
+        else if (aliases.includes(q)) sc = 80
         else if (d.includes(q)) sc = 20
         else return 0
-        return sc + Math.log10((it.v || 0) + 10) // 同分按项目体量,log 缩放不压过相关性
+        return sc + (it.t === 'project' ? 30 : 0) + Math.log10((it.v || 0) + 10) // 统一项目优先，同分再按体量
       }
 
       function initSearch() {
@@ -64,8 +65,8 @@ const title = `${s.search.title} | aiagent.club`
           const frag = document.createDocumentFragment()
           for (const it of items) {
             const li = document.createElement('li')
-            const a = document.createElement('a'); a.href = base + '/p/' + it.s; a.className = 'sr-item'
-            const badge = document.createElement('span'); badge.className = 'sr-kind'; badge.textContent = kinds[it.k] || it.k
+            const a = document.createElement('a'); a.href = base + (it.t === 'project' ? '/project/' : '/p/') + it.s; a.className = 'sr-item'
+            const badge = document.createElement('span'); badge.className = 'sr-kind'; badge.textContent = it.t === 'project' ? tx.unifiedProject : (kinds[it.k] || it.k)
             const name = document.createElement('span'); name.className = 'sr-name'; name.textContent = it.n
             a.appendChild(badge); a.appendChild(name)
             if (it.d) { const d = document.createElement('span'); d.className = 'sr-desc'; d.textContent = it.d; a.appendChild(d) }
