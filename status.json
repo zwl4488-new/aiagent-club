@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-09-15T06:17:28.363Z",
+  "generated_at": "2026-09-15T17:54:55.930Z",
   "latest_snapshot": "2026-09-15",
   "entities": 1742,
-  "metrics_rows": 846758,
+  "metrics_rows": 846788,
   "entities_by_kind": {
     "github": 805,
     "openrouter": 625,
@@ -18,56 +18,56 @@
       "environment": "actions",
       "status": "partial",
       "rows_written": 5516,
-      "started_at": "2026-09-15T06:09:19.149Z",
-      "finished_at": "2026-09-15T06:14:07.252Z"
+      "started_at": "2026-09-15T17:46:27.645Z",
+      "finished_at": "2026-09-15T17:51:29.833Z"
     },
     {
       "source": "huggingface",
       "environment": "actions",
       "status": "ok",
       "rows_written": 48,
-      "started_at": "2026-09-15T06:16:58.344Z",
-      "finished_at": "2026-09-15T06:17:03.546Z"
+      "started_at": "2026-09-15T17:54:21.367Z",
+      "finished_at": "2026-09-15T17:54:26.496Z"
     },
     {
       "source": "modelscope",
       "environment": "actions",
       "status": "ok",
       "rows_written": 32,
-      "started_at": "2026-09-15T06:16:15.823Z",
-      "finished_at": "2026-09-15T06:16:54.224Z"
+      "started_at": "2026-09-15T17:53:52.925Z",
+      "finished_at": "2026-09-15T17:54:17.042Z"
     },
     {
       "source": "npm",
       "environment": "actions",
       "status": "partial",
       "rows_written": 178,
-      "started_at": "2026-09-15T06:14:07.252Z",
-      "finished_at": "2026-09-15T06:14:38.427Z"
+      "started_at": "2026-09-15T17:51:29.833Z",
+      "finished_at": "2026-09-15T17:51:58.969Z"
     },
     {
       "source": "openrouter",
       "environment": "actions",
       "status": "ok",
-      "rows_written": 2835,
-      "started_at": "2026-09-15T06:16:15.074Z",
-      "finished_at": "2026-09-15T06:16:15.823Z"
+      "rows_written": 2838,
+      "started_at": "2026-09-15T17:53:52.021Z",
+      "finished_at": "2026-09-15T17:53:52.925Z"
     },
     {
       "source": "pypi",
       "environment": "actions",
       "status": "partial",
-      "rows_written": 123,
-      "started_at": "2026-09-15T06:14:38.428Z",
-      "finished_at": "2026-09-15T06:16:15.074Z"
+      "rows_written": 114,
+      "started_at": "2026-09-15T17:51:58.969Z",
+      "finished_at": "2026-09-15T17:53:52.021Z"
     },
     {
       "source": "vscode",
       "environment": "actions",
       "status": "ok",
       "rows_written": 30,
-      "started_at": "2026-09-15T06:16:54.224Z",
-      "finished_at": "2026-09-15T06:16:58.344Z"
+      "started_at": "2026-09-15T17:54:17.042Z",
+      "finished_at": "2026-09-15T17:54:21.367Z"
     }
   ]
 }
